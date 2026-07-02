@@ -6,6 +6,8 @@ import io
 import shutil
 import mimetypes
 import datetime
+import fcntl
+import glob
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse, FileResponse
@@ -160,23 +162,71 @@ def parse_gphoto_file_list(stdout: str) -> List[Dict[str, Any]]:
 # ==============================================================================
 # SAFE EXECUTION CORE (POKA-YOKE FOR I/O CONFLICTS)
 # ==============================================================================
+def reset_camera_usb() -> bool:
+    """
+    Scans host sysfs inside container to find Nikon camera Vendor/Product ID
+    and performs a low-level USB bus reset via ioctl.
+    """
+    logger.info("Attempting low-level USB bus reset for Nikon camera...")
+    found = False
+    for dev_path in glob.glob("/sys/bus/usb/devices/*"):
+        id_vendor_path = os.path.join(dev_path, "idVendor")
+        id_product_path = os.path.join(dev_path, "idProduct")
+        if os.path.exists(id_vendor_path) and os.path.exists(id_product_path):
+            try:
+                with open(id_vendor_path, 'r') as f:
+                    vendor = f.read().strip()
+                with open(id_product_path, 'r') as f:
+                    product = f.read().strip()
+                
+                if vendor == "04b0" and product == "035e":
+                    with open(os.path.join(dev_path, "busnum"), 'r') as f:
+                        bus = f.read().strip().zfill(3)
+                    with open(os.path.join(dev_path, "devnum"), 'r') as f:
+                        dev = f.read().strip().zfill(3)
+                    
+                    usb_device_path = f"/dev/bus/usb/{bus}/{dev}"
+                    if os.path.exists(usb_device_path):
+                        # 21780 represents USBDEVFS_RESET ioctl
+                        with open(usb_device_path, 'wb') as usb_f:
+                            fcntl.ioctl(usb_f.fileno(), 21780, 0)
+                        logger.info(f"Successfully sent USBDEVFS_RESET ioctl to {usb_device_path}")
+                        found = True
+                        break
+            except Exception as e:
+                logger.error(f"Failed to reset Nikon USB device: {e}")
+    return found
+
 async def execute_gphoto_raw(args: List[str]) -> tuple[str, str, int]:
-    """Runs a raw gphoto2 command asynchronously."""
-    try:
-        process = await asyncio.create_subprocess_exec(
-            "gphoto2", *args,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-        return (
-            stdout.decode("utf-8", errors="ignore"),
-            stderr.decode("utf-8", errors="ignore"),
-            process.returncode
-        )
-    except Exception as e:
-        logger.error(f"Failed to execute gphoto2 subprocess: {e}")
-        return "", str(e), -1
+    """Runs a raw gphoto2 command asynchronously, with auto-USB-reset on connection fail."""
+    async def run_once():
+        try:
+            process = await asyncio.create_subprocess_exec(
+                "gphoto2", *args,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await process.communicate()
+            return (
+                stdout.decode("utf-8", errors="ignore"),
+                stderr.decode("utf-8", errors="ignore"),
+                process.returncode
+            )
+        except Exception as e:
+            return "", str(e), -1
+
+    stdout, stderr, code = await run_once()
+    
+    # If connection failure detected, perform USB reset and retry once
+    err_lower = stderr.lower()
+    if code != 0 and any(k in err_lower for k in ["timeout", "busy", "could not claim", "claim interface"]):
+        logger.warning(f"gphoto2 failed with connection error: {stderr.strip()}. Triggering USB reset recovery...")
+        if reset_camera_usb():
+            await asyncio.sleep(2.0) # Wait for re-enumeration
+            logger.info("Retrying gphoto2 command after USB reset...")
+            stdout, stderr, code = await run_once()
+            
+    return stdout, stderr, code
 
 async def is_camera_connected() -> bool:
     """Fast, safe connection check without locking the execution queue."""

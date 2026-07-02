@@ -9,7 +9,7 @@ import datetime
 import fcntl
 import glob
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Response
 from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse, FileResponse
 from pydantic import BaseModel
 
@@ -63,19 +63,45 @@ active_files_catalog: Dict[int, Dict[str, Any]] = {}
 os.makedirs(CACHE_THUMB_DIR, exist_ok=True)
 pre_cache_active = False
 
-def fetch_preview_bytes_local(folder: str, name: str) -> bytes:
-    import gphoto2 as gp
-    camera = gp.Camera()
-    camera.init()
-    try:
-        camera_file = gp.CameraFile()
-        camera.file_get(folder, name, gp.GP_FILE_TYPE_PREVIEW, camera_file)
-        return bytes(camera_file.get_data_and_size())
-    finally:
+class CameraSession:
+    def __init__(self):
+        self.camera = None
+        
+    def _init_local(self):
+        import gphoto2 as gp
+        self.camera = gp.Camera()
+        self.camera.init()
+        
+    def _close_local(self):
+        if self.camera:
+            try:
+                self.camera.exit()
+            except:
+                pass
+            self.camera = None
+
+    async def get_preview(self, folder: str, name: str) -> bytes:
+        """Gets preview bytes using the persistent camera session, auto-recovering on failures."""
+        def fetch():
+            import gphoto2 as gp
+            if not self.camera:
+                logger.info("Initializing persistent camera session...")
+                self._init_local()
+            camera_file = gp.CameraFile()
+            self.camera.file_get(folder, name, gp.GP_FILE_TYPE_PREVIEW, camera_file)
+            return bytes(camera_file.get_data_and_size())
+            
         try:
-            camera.exit()
-        except:
-            pass
+            return await asyncio.to_thread(fetch)
+        except Exception as e:
+            logger.warning(f"Session preview fetch failed: {e}. Resetting session and retrying...")
+            await asyncio.to_thread(self._close_local)
+            # Try to recover the USB connection dynamically
+            reset_camera_usb()
+            await asyncio.sleep(1.0)
+            return await asyncio.to_thread(fetch)
+
+camera_session = CameraSession()
 
 async def fetch_preview_bytes(folder: str, name: str) -> bytes:
     """Fetches the preview/thumbnail bytes of a camera file."""
@@ -103,8 +129,8 @@ finally:
             raise Exception(f"Remote preview fetch failed: {stderr.decode()}")
         return stdout
     else:
-        # Run locally in a worker thread
-        return await asyncio.to_thread(fetch_preview_bytes_local, folder, name)
+        # Run locally with persistent session
+        return await camera_session.get_preview(folder, name)
 
 pre_cache_active = False
 
@@ -445,15 +471,13 @@ async def get_status():
 async def list_files(background_tasks: BackgroundTasks):
     """Lists all files on the digital camera."""
     global active_files_catalog
-    if camera_lock.locked():
-        # Fallback: Serve the in-memory catalog cache so UI requests never hang while camera is busy
-        if active_files_catalog:
-            return {
-                "status": "success",
-                "count": len(active_files_catalog),
-                "files": list(active_files_catalog.values())
-            }
-        return JSONResponse(status_code=409, content={"status": "busy", "message": "Camera is currently busy."})
+    # If the lock is busy and we already have a cached list, serve it immediately to avoid blocking
+    if camera_lock.locked() and active_files_catalog:
+        return {
+            "status": "success",
+            "count": len(active_files_catalog),
+            "files": list(active_files_catalog.values())
+        }
         
     stdout = await execute_gphoto_safe(["--list-files"])
     files = parse_gphoto_file_list(stdout)
@@ -470,7 +494,7 @@ async def list_files(background_tasks: BackgroundTasks):
 
 @app.get("/api/files/{index}/preview")
 async def get_file_preview(index: int):
-    """Fetches a fast, screen-size JPEG preview (640x480) of a media asset."""
+    """Fetches a fast, screen-size JPEG preview (640x480) of a media asset, checking disk caches first."""
     global active_files_catalog
     if not active_files_catalog:
         try:
@@ -487,59 +511,61 @@ async def get_file_preview(index: int):
     folder = file_info["folder"]
     name = file_info["name"]
     
-    remote_host = os.getenv("REMOTE_CAMERA_HOST")
+    # 1. Cache-first check (shared with thumbnail cache filename!)
+    cache_filename = f"{name}_{file_info['size'].replace(' ', '_')}.jpg"
+    cache_path = os.path.join(CACHE_THUMB_DIR, cache_filename)
     
-    if remote_host:
-        # Remote retrieval over SSH
-        preview_script = f"""
-import gphoto2 as gp, sys
-camera = gp.Camera()
-camera.init()
-try:
-    camera_file = gp.CameraFile()
-    camera.file_get("{folder}", "{name}", gp.GP_FILE_TYPE_PREVIEW, camera_file)
-    sys.stdout.buffer.write(camera_file.get_data_and_size())
-finally:
-    camera.exit()
-"""
-        async with camera_lock:
-            process = await asyncio.create_subprocess_exec(
-                "ssh", f"ads@{remote_host}", "docker", "exec", "camera-app", "python3", "-c", preview_script,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            stdout, stderr = await process.communicate()
-            if process.returncode != 0:
-                logger.error(f"Remote preview failed: {stderr.decode()}")
-                raise HTTPException(status_code=500, detail="Failed to fetch remote preview.")
-            return Response(content=stdout, media_type="image/jpeg")
-    else:
-        # Local retrieval
-        def get_preview_local():
-            import gphoto2 as gp
-            camera = gp.Camera()
-            camera.init()
-            try:
-                camera_file = gp.CameraFile()
-                camera.file_get(folder, name, gp.GP_FILE_TYPE_PREVIEW, camera_file)
-                return bytes(camera_file.get_data_and_size())
-            finally:
-                try:
-                    camera.exit()
-                except:
-                    pass
-                    
+    if os.path.exists(cache_path):
+        logger.info(f"Serving preview for {name} directly from disk cache.")
+        return FileResponse(cache_path, media_type="image/jpeg")
+        
+    # 2. Check if the original file is already backed up locally
+    local_filepath = os.path.join(BACKUP_DIR, name)
+    if os.path.exists(local_filepath):
         try:
-            async with camera_lock:
-                data = await asyncio.to_thread(get_preview_local)
-            return Response(content=data, media_type="image/jpeg")
+            def generate_local_preview():
+                from PIL import Image
+                if name.lower().endswith(('.jpg', '.jpeg', '.png', '.nef')):
+                    with Image.open(local_filepath) as img:
+                        img.thumbnail((640, 480))
+                        img.convert("RGB").save(cache_path, "JPEG")
+                    return True
+                return False
+                
+            success = await asyncio.to_thread(generate_local_preview)
+            if success and os.path.exists(cache_path):
+                logger.info(f"Generated and served preview for {name} from local backup file.")
+                return FileResponse(cache_path, media_type="image/jpeg")
         except Exception as e:
-            logger.error(f"Local preview failed: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to fetch local preview: {str(e)}")
+            logger.warning(f"Failed to generate local preview from backup for {name}: {e}")
+            
+    # 3. Cache miss: Fetch from camera and store to cache
+    if await is_camera_connected():
+        async with camera_lock:
+            try:
+                data = await fetch_preview_bytes(folder, name)
+                if len(data) > 0:
+                    with open(cache_path, "wb") as thumb_f:
+                        thumb_f.write(data)
+                    return Response(content=data, media_type="image/jpeg")
+            except Exception as ex:
+                logger.error(f"Failed to fetch preview for index {index}: {ex}")
+                
+    raise HTTPException(status_code=500, detail="Failed to retrieve preview from camera.")
 
 @app.get("/api/files/{index}/stream")
 async def stream_file(index: int):
-    """Streams a media asset directly from the camera without caching to server RAM."""
+    """Streams a media asset from local disk backup if available, otherwise directly from camera."""
+    global active_files_catalog
+    
+    file_info = active_files_catalog.get(index)
+    if file_info:
+        name = file_info["name"]
+        local_filepath = os.path.join(BACKUP_DIR, name)
+        if os.path.exists(local_filepath):
+            logger.info(f"Serving stream for {name} directly from local disk cache.")
+            return FileResponse(local_filepath, media_type="application/octet-stream", filename=name)
+            
     if not await is_camera_connected():
         raise CameraConnectionError("Camera is disconnected.")
         

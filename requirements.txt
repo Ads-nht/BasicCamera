@@ -2,3 +2,5 @@ fastapi>=0.100.0
 uvicorn>=0.22.0
 pydantic>=2.0
 gphoto2>=2.5.0
+pillow>=10.0.0
+

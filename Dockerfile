@@ -5,6 +5,13 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
+# Install compilation packages for compiling python-gphoto2 bindings
+RUN apt-get update && apt-get install -y \
+    gcc \
+    pkg-config \
+    libgphoto2-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy dependency definition
 COPY requirements.txt .
 

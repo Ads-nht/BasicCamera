@@ -428,6 +428,75 @@ async def list_files(background_tasks: BackgroundTasks):
         "files": files
     }
 
+@app.get("/api/files/{index}/preview")
+async def get_file_preview(index: int):
+    """Fetches a fast, screen-size JPEG preview (640x480) of a media asset."""
+    global active_files_catalog
+    if not active_files_catalog:
+        try:
+            stdout = await execute_gphoto_safe(["--list-files"])
+            files = parse_gphoto_file_list(stdout)
+            active_files_catalog = {f["index"]: f for f in files}
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"Camera not ready: {str(e)}")
+            
+    file_info = active_files_catalog.get(index)
+    if not file_info:
+        raise HTTPException(status_code=404, detail=f"File with index {index} not found.")
+        
+    folder = file_info["folder"]
+    name = file_info["name"]
+    
+    remote_host = os.getenv("REMOTE_CAMERA_HOST")
+    
+    if remote_host:
+        # Remote retrieval over SSH
+        preview_script = f"""
+import gphoto2 as gp, sys
+camera = gp.Camera()
+camera.init()
+try:
+    camera_file = gp.CameraFile()
+    camera.file_get("{folder}", "{name}", gp.GP_FILE_TYPE_PREVIEW, camera_file)
+    sys.stdout.buffer.write(camera_file.get_data_and_size())
+finally:
+    camera.exit()
+"""
+        async with camera_lock:
+            process = await asyncio.create_subprocess_exec(
+                "ssh", f"ads@{remote_host}", "docker", "exec", "camera-app", "python3", "-c", preview_script,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await process.communicate()
+            if process.returncode != 0:
+                logger.error(f"Remote preview failed: {stderr.decode()}")
+                raise HTTPException(status_code=500, detail="Failed to fetch remote preview.")
+            return Response(content=stdout, media_type="image/jpeg")
+    else:
+        # Local retrieval
+        def get_preview_local():
+            import gphoto2 as gp
+            camera = gp.Camera()
+            camera.init()
+            try:
+                camera_file = gp.CameraFile()
+                camera.file_get(folder, name, gp.GP_FILE_TYPE_PREVIEW, camera_file)
+                return bytes(camera_file.get_data_and_size())
+            finally:
+                try:
+                    camera.exit()
+                except:
+                    pass
+                    
+        try:
+            async with camera_lock:
+                data = await asyncio.to_thread(get_preview_local)
+            return Response(content=data, media_type="image/jpeg")
+        except Exception as e:
+            logger.error(f"Local preview failed: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to fetch local preview: {str(e)}")
+
 @app.get("/api/files/{index}/stream")
 async def stream_file(index: int):
     """Streams a media asset directly from the camera without caching to server RAM."""

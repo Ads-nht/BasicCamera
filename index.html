@@ -678,24 +678,27 @@
             
             const isVideo = file.mime.startsWith('video');
             const streamUrl = `/api/files/${file.index}/stream`;
+            const previewUrl = `/api/files/${file.index}/preview`;
             
             btnDownloadPreview.href = streamUrl;
             btnDownloadPreview.download = file.name;
             
             if (isVideo) {
                 previewContentBox.innerHTML = `
-                    <video id="player" controls autoplay class="max-w-full max-h-[70vh] rounded-lg border border-outline-variant shadow-2xl">
-                        <source src="${streamUrl}" type="${file.mime}">
-                        Your browser does not support playing this video format natively.
-                    </video>
+                    <div class="relative max-w-full max-h-[70vh] rounded-lg border border-outline-variant shadow-2xl overflow-hidden bg-black flex items-center justify-center">
+                        <img src="${previewUrl}" alt="${file.name}" class="max-w-full max-h-[70vh] object-contain opacity-75">
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span class="material-symbols-outlined text-[80px] text-white/80 drop-shadow-lg">play_circle</span>
+                        </div>
+                    </div>
                     <div class="mt-md text-on-surface-variant text-center font-mono-data">
                         ${file.name} (${file.size})<br>
-                        <span class="text-xs text-outline">AVI/MOV format requires local player download.</span>
+                        <span class="text-xs text-outline">AVI video preview. Click the download button on top-right to download full video.</span>
                     </div>
                 `;
             } else {
                 previewContentBox.innerHTML = `
-                    <img src="${streamUrl}" alt="${file.name}" class="max-w-full max-h-[70vh] object-contain rounded-lg border border-outline-variant shadow-2xl">
+                    <img src="${previewUrl}" alt="${file.name}" class="max-w-full max-h-[70vh] object-contain rounded-lg border border-outline-variant shadow-2xl">
                     <div class="mt-md text-on-surface text-center font-mono-data">${file.name} (${file.size})</div>
                 `;
             }

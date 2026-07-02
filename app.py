@@ -2,9 +2,13 @@ import os
 import re
 import asyncio
 import logging
+import io
+import shutil
+import mimetypes
+import datetime
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
+from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse, FileResponse
 from pydantic import BaseModel
 
 # Setup logging
@@ -377,3 +381,137 @@ async def delete_files(payload: DeleteRequest):
         "deleted_indices": deleted,
         "failed": failed
     }
+
+# ==============================================================================
+# ADDITIONAL ENDPOINTS (THUMBNAILS, BACKUPS & SYSTEM STATUS)
+# ==============================================================================
+
+SVG_IMAGE = b'<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="100%" height="100%" fill="#171f33"/><text x="50%" y="50%" fill="#bbcabf" font-family="sans-serif" font-size="14" text-anchor="middle" dominant-baseline="middle">PHOTO</text></svg>'
+SVG_VIDEO = b'<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="100%" height="100%" fill="#171f33"/><text x="50%" y="50%" fill="#bbcabf" font-family="sans-serif" font-size="14" text-anchor="middle" dominant-baseline="middle">VIDEO</text></svg>'
+
+def get_readable_size(size_in_bytes: int) -> str:
+    val = float(size_in_bytes)
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if val < 1024.0:
+            return f"{val:.1f} {unit}"
+        val /= 1024.0
+    return f"{val:.1f} TB"
+
+@app.get("/api/files/{index}/thumbnail")
+async def get_thumbnail(index: int):
+    """Fetches a preview thumbnail directly from camera or returns a fallback SVG."""
+    if not await is_camera_connected():
+        return StreamingResponse(io.BytesIO(SVG_IMAGE), media_type="image/svg+xml")
+        
+    async with camera_lock:
+        process = await asyncio.create_subprocess_exec(
+            "gphoto2", "--get-thumbnail", str(index), "--stdout",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        if process.returncode == 0 and len(stdout) > 0:
+            return StreamingResponse(io.BytesIO(stdout), media_type="image/jpeg")
+            
+    # If thumbnail retrieval fails (e.g. for video files or connection glitch), return clean SVG
+    return StreamingResponse(io.BytesIO(SVG_IMAGE), media_type="image/svg+xml")
+
+@app.get("/api/backups")
+async def list_backups():
+    """Lists files successfully backed up in local persistent storage."""
+    files = []
+    if os.path.exists(BACKUP_DIR):
+        for name in os.listdir(BACKUP_DIR):
+            filepath = os.path.join(BACKUP_DIR, name)
+            if os.path.isfile(filepath):
+                stat = os.stat(filepath)
+                mime, _ = mimetypes.guess_type(filepath)
+                files.append({
+                    "name": name,
+                    "size": get_readable_size(stat.st_size),
+                    "mime": mime or "application/octet-stream",
+                    "date": datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+                })
+    return {
+        "status": "success",
+        "count": len(files),
+        "files": files
+    }
+
+@app.get("/api/backups/{filename}/stream")
+async def stream_backup(filename: str):
+    """Streams a backed-up file with full HTTP range support for high-res seeking."""
+    filepath = os.path.realpath(os.path.join(BACKUP_DIR, filename))
+    if not filepath.startswith(os.path.realpath(BACKUP_DIR)):
+        raise HTTPException(status_code=403, detail="Access denied")
+        
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="File not found")
+        
+    mime, _ = mimetypes.guess_type(filepath)
+    return FileResponse(filepath, media_type=mime or "application/octet-stream")
+
+@app.get("/api/system/status")
+async def get_system_status():
+    """Gathers real-time performance diagnostics and disk status from host proc files."""
+    # Disk status
+    try:
+        total, used, free = shutil.disk_usage(BACKUP_DIR)
+        pct_used = (used / total) * 100
+        disk_data = {
+            "total": get_readable_size(total),
+            "used": get_readable_size(used),
+            "free": get_readable_size(free),
+            "pct": round(pct_used, 1)
+        }
+    except Exception as e:
+        disk_data = {"total": "0 B", "used": "0 B", "free": "0 B", "pct": 0, "error": str(e)}
+
+    # Memory status
+    mem_total, mem_available = 0, 0
+    try:
+        with open("/proc/meminfo", "r") as f:
+            for line in f:
+                if line.startswith("MemTotal:"):
+                    mem_total = int(line.split()[1]) * 1024
+                elif line.startswith("MemAvailable:"):
+                    mem_available = int(line.split()[1]) * 1024
+        mem_used = mem_total - mem_available
+        mem_pct = (mem_used / mem_total) * 100 if mem_total > 0 else 0
+        mem_data = {
+            "total": get_readable_size(mem_total),
+            "used": get_readable_size(mem_used),
+            "free": get_readable_size(mem_available),
+            "pct": round(mem_pct, 1)
+        }
+    except Exception as e:
+        mem_data = {"total": "0 B", "used": "0 B", "free": "0 B", "pct": 0, "error": str(e)}
+
+    # CPU load average (1m)
+    try:
+        with open("/proc/loadavg", "r") as f:
+            cpu_load = f.read().split()[0]
+    except Exception:
+        cpu_load = "0.00"
+
+    # Uptime diagnostics
+    try:
+        with open("/proc/uptime", "r") as f:
+            uptime_secs = float(f.read().split()[0])
+            days = int(uptime_secs // 86400)
+            hours = int((uptime_secs % 86400) // 3600)
+            mins = int((uptime_secs % 3600) // 60)
+            uptime_str = f"{days}d {hours}h {mins}m"
+    except Exception:
+        uptime_str = "Unknown"
+
+    return {
+        "status": "success",
+        "cpu_load": cpu_load,
+        "disk": disk_data,
+        "memory": mem_data,
+        "uptime": uptime_str,
+        "version": "v1.0.0-stable",
+        "camera_connected": await is_camera_connected()
+    }
+

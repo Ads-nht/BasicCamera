@@ -198,7 +198,7 @@ for dev_path in glob.glob('/sys/bus/usb/devices/*'):
 """
         import subprocess
         try:
-            cmd = ["ssh", f"ads@{remote_host}", "docker", "exec", "-T", "camera-app", "python3", "-c", reset_code]
+            cmd = ["ssh", f"ads@{remote_host}", "docker", "exec", "camera-app", "python3", "-c", reset_code]
             out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode()
             if "RESET_SUCCESS" in out:
                 logger.info("Successfully triggered remote camera USB reset over SSH.")
@@ -242,7 +242,7 @@ async def execute_gphoto_raw(args: List[str]) -> tuple[str, str, int]:
     remote_host = os.getenv("REMOTE_CAMERA_HOST")
     if remote_host:
         cmd = "ssh"
-        cmd_args = [f"ads@{remote_host}", "docker", "exec", "-T", "camera-app", "gphoto2"] + args
+        cmd_args = [f"ads@{remote_host}", "docker", "exec", "camera-app", "gphoto2"] + args
     else:
         cmd = "gphoto2"
         cmd_args = args

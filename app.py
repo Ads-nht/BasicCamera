@@ -111,15 +111,40 @@ class CameraSession:
 
     async def download_file(self, folder: str, name: str, target_path: str):
         """Downloads a file from the camera and saves it directly to local disk."""
-        try:
-            await asyncio.to_thread(self._download_file_local, folder, name, target_path)
-        except Exception as e:
-            logger.warning(f"Session download failed: {e}. Resetting session and retrying...")
-            await asyncio.to_thread(self._close_local)
-            # Recover USB connection and retry
-            reset_camera_usb()
-            await asyncio.sleep(1.0)
-            await asyncio.to_thread(self._download_file_local, folder, name, target_path)
+        remote_host = os.getenv("REMOTE_CAMERA_HOST")
+        if remote_host:
+            # Download file from remote workstation over SSH natively (piped to stdout)
+            try:
+                process = await asyncio.create_subprocess_exec(
+                    "ssh", f"ads@{remote_host}", "gphoto2", "--folder", folder, "--get-file", name, "--stdout",
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                
+                with open(target_path, "wb") as f:
+                    while True:
+                        chunk = await process.stdout.read(65536)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        
+                await process.wait()
+                if process.returncode != 0:
+                    stderr_err = await process.stderr.read()
+                    raise Exception(f"Remote file download failed: {stderr_err.decode()}")
+            except Exception as e:
+                logger.error(f"Remote download failed: {e}")
+                raise
+        else:
+            try:
+                await asyncio.to_thread(self._download_file_local, folder, name, target_path)
+            except Exception as e:
+                logger.warning(f"Session download failed: {e}. Resetting session and retrying...")
+                await asyncio.to_thread(self._close_local)
+                # Recover USB connection and retry
+                reset_camera_usb()
+                await asyncio.sleep(1.0)
+                await asyncio.to_thread(self._download_file_local, folder, name, target_path)
 
 camera_session = CameraSession()
 
@@ -127,7 +152,7 @@ async def fetch_preview_bytes(folder: str, name: str) -> bytes:
     """Fetches the preview/thumbnail bytes of a camera file."""
     remote_host = os.getenv("REMOTE_CAMERA_HOST")
     if remote_host:
-        # Run python code remotely over SSH
+        # Run python code remotely over SSH on the workstation host machine's virtualenv natively
         preview_script = f"""
 import gphoto2 as gp, sys
 camera = gp.Camera()
@@ -140,7 +165,7 @@ finally:
     camera.exit()
 """
         process = await asyncio.create_subprocess_exec(
-            "ssh", f"ads@{remote_host}", "docker", "exec", "camera-app", "python3", "-c", preview_script,
+            "ssh", f"ads@{remote_host}", "/home/ads/Antigravity/Projeler/Basic\\ Camera/venv/bin/python3", "-c", f"'{preview_script}'",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
@@ -328,7 +353,7 @@ async def execute_gphoto_raw(args: List[str]) -> tuple[str, str, int]:
     remote_host = os.getenv("REMOTE_CAMERA_HOST")
     if remote_host:
         cmd = "ssh"
-        cmd_args = [f"ads@{remote_host}", "docker", "exec", "camera-app", "gphoto2"] + args
+        cmd_args = [f"ads@{remote_host}", "gphoto2"] + args
     else:
         cmd = "gphoto2"
         cmd_args = args

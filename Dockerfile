@@ -29,6 +29,7 @@ COPY --from=builder /install /usr/local
 
 # Copy application source code
 COPY app.py .
+COPY index.html .
 
 # Create the persistent target directory for backups
 RUN mkdir -p /storage/backup

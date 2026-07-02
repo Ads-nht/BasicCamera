@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Surveillance Core - Camera Management</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@400;600&amp;display=swap" rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container": "#171f33",
+                        "on-error": "#690005",
+                        "on-secondary-container": "#abb9d2",
+                        "on-background": "#dae2fd",
+                        "surface-container-lowest": "#060e20",
+                        "inverse-primary": "#006c49",
+                        "tertiary-container": "#ff7a73",
+                        "secondary": "#b9c7e0",
+                        "tertiary-fixed-dim": "#ffb3ad",
+                        "inverse-on-surface": "#283044",
+                        "surface": "#0b1326",
+                        "on-tertiary": "#68000a",
+                        "outline-variant": "#3c4a42",
+                        "secondary-fixed-dim": "#b9c7e0",
+                        "primary-fixed": "#6ffbbe",
+                        "surface-container-high": "#222a3d",
+                        "on-surface-variant": "#bbcabf",
+                        "on-primary": "#003824",
+                        "on-surface": "#dae2fd",
+                        "on-tertiary-container": "#79000e",
+                        "primary": "#4edea3",
+                        "on-primary-container": "#00422b",
+                        "tertiary-fixed": "#ffdad7",
+                        "surface-container-low": "#131b2e",
+                        "on-primary-fixed-variant": "#005236",
+                        "on-tertiary-fixed-variant": "#930013",
+                        "tertiary": "#ffb3ad",
+                        "error": "#ffb4ab",
+                        "surface-variant": "#2d3449",
+                        "surface-dim": "#0b1326",
+                        "error-container": "#93000a",
+                        "outline": "#86948a",
+                        "on-secondary-fixed": "#0d1c2f",
+                        "surface-container-highest": "#2d3449",
+                        "surface-bright": "#31394d",
+                        "surface-tint": "#4edea3",
+                        "background": "#0b1326",
+                        "primary-container": "#10b981",
+                        "secondary-container": "#3c4a5e",
+                        "on-secondary": "#233144",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed": "#d5e3fd",
+                        "on-primary-fixed": "#002113",
+                        "on-tertiary-fixed": "#410004",
+                        "inverse-surface": "#dae2fd",
+                        "primary-fixed-dim": "#4edea3",
+                        "on-secondary-fixed-variant": "#3a485c"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "md": "16px",
+                        "bottom-nav-height": "64px",
+                        "sidebar-width": "260px",
+                        "xs": "4px",
+                        "base": "4px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "gutter": "16px",
+                        "xl": "40px"
+                    },
+                    fontFamily: {
+                        "display-lg": ["Inter"],
+                        "label-caps": ["Geist"],
+                        "headline-sm": ["Inter"],
+                        "mono-data": ["Geist"],
+                        "body-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    fontSize: {
+                        "display-lg": ["32px", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "label-caps": ["11px", { lineHeight: "1", letterSpacing: "0.05em", fontWeight: "600" }],
+                        "headline-sm": ["18px", { lineHeight: "1.4", fontWeight: "500" }],
+                        "mono-data": ["12px", { lineHeight: "1", letterSpacing: "0em", fontWeight: "400" }],
+                        "body-md": ["14px", { lineHeight: "1.5", fontWeight: "400" }],
+                        "body-sm": ["13px", { lineHeight: "1.5", fontWeight: "400" }],
+                        "headline-md": ["24px", { lineHeight: "1.3", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .shimmer {
+            background: linear-gradient(90deg, #1e293b 0%, #334155 50%, #1e293b 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col md:flex-row overflow-hidden select-none">
+
+<!-- NavigationDrawer (Desktop) -->
+<nav class="hidden md:flex flex-col py-lg gap-sm fixed left-0 top-0 h-full w-[260px] bg-surface-container border-r border-outline-variant z-40">
+    <div class="font-display-lg text-display-lg text-primary mb-lg px-md truncate">SURVEILLANCE CORE</div>
+    <div class="flex flex-col gap-xs mt-lg w-full">
+        <a class="flex items-center px-md py-sm mx-sm rounded-DEFAULT text-primary border-l-2 border-primary bg-primary-container/10 hover:bg-surface-container-highest transition-all duration-200" href="#">
+            <span class="material-symbols-outlined mr-md" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+            <span class="font-label-caps text-label-caps">Gallery</span>
+        </a>
+        <a class="flex items-center px-md py-sm mx-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+            <span class="material-symbols-outlined mr-md">cloud_download</span>
+            <span class="font-label-caps text-label-caps">Server Backups</span>
+        </a>
+        <a class="flex items-center px-md py-sm mx-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+            <span class="material-symbols-outlined mr-md">analytics</span>
+            <span class="font-label-caps text-label-caps">System Status</span>
+        </a>
+    </div>
+</nav>
+
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-screen md:ml-[260px] relative">
+    <!-- TopAppBar -->
+    <header class="flex justify-between items-center h-16 px-md w-full z-30 bg-surface/80 backdrop-blur-md border-b border-outline-variant fixed top-0 md:relative md:w-auto">
+        <div class="flex items-center gap-sm">
+            <span class="material-symbols-outlined text-primary">sensors</span>
+            <h1 class="font-headline-sm text-headline-sm text-primary tracking-tight truncate">Basic Camera</h1>
+        </div>
+        <!-- Connection Telemetry -->
+        <div class="flex items-center gap-sm bg-surface-container-low px-sm py-xs rounded-full border border-outline-variant cursor-pointer hover:bg-surface-container-high transition-colors duration-150" id="telemetry-btn">
+            <div class="w-2 h-2 rounded-full bg-outline" id="connection-dot"></div>
+            <span class="font-mono-data text-mono-data text-on-surface-variant hidden sm:inline" id="connection-text">Checking Camera...</span>
+        </div>
+    </header>
+
+    <!-- Canvas -->
+    <div class="flex-1 overflow-y-auto mt-16 md:mt-0 mb-[64px] md:mb-0 p-md relative hide-scrollbar" id="main-canvas">
+        <!-- Actions Toolbar -->
+        <div class="flex justify-between items-center mb-lg sticky top-0 z-20 bg-background/90 backdrop-blur-md py-sm rounded-lg border border-outline-variant/30 px-sm shadow-md">
+            <div class="flex items-center gap-sm">
+                <span class="material-symbols-outlined text-on-surface-variant">folder_open</span>
+                <span class="font-label-caps text-label-caps text-on-surface">CAMERA STORAGE</span>
+            </div>
+            <div class="flex gap-sm">
+                <button class="px-md py-xs rounded-DEFAULT border border-outline-variant text-error hover:bg-error-container/20 transition-colors font-label-caps text-label-caps flex items-center gap-xs" id="btn-purge">
+                    <span class="material-symbols-outlined text-[16px]">delete</span>
+                    Purge Card
+                </button>
+                <button class="px-md py-xs rounded-DEFAULT bg-primary text-on-primary hover:bg-primary-fixed-dim transition-colors font-label-caps text-label-caps flex items-center gap-xs relative overflow-hidden" id="btn-backup">
+                    <span class="material-symbols-outlined text-[16px]" id="backup-icon">cloud_upload</span>
+                    <span id="backup-text">Backup All</span>
+                    <!-- Progress overlay -->
+                    <div class="absolute left-0 top-0 bottom-0 bg-inverse-primary/30 w-0 transition-all duration-75" id="backup-progress"></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading State (Skeleton) -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-sm hidden" id="loading-state"></div>
+
+        <!-- Empty State -->
+        <div class="hidden flex-col items-center justify-center h-64 text-center mt-xl border border-dashed border-outline-variant rounded-lg p-lg bg-surface-container-low/50" id="empty-state">
+            <span class="material-symbols-outlined text-[48px] text-on-surface-variant mb-sm opacity-50">cleaning_services</span>
+            <p class="font-headline-sm text-headline-sm text-on-surface mb-xs">No media files detected.</p>
+            <p class="font-body-sm text-body-sm text-on-surface-variant max-w-sm">No photos or videos found on the connected Nikon Coolpix. New captures will appear here.</p>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-sm auto-rows-[160px]" id="content-grid"></div>
+    </div>
+</main>
+
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full h-[64px] rounded-t-full border-t border-outline-variant shadow-lg z-50 flex justify-around items-center px-gutter bg-surface-container-lowest/90 backdrop-blur-lg">
+    <a class="flex flex-col items-center justify-center text-primary font-bold p-sm rounded-full" href="#">
+        <span class="material-symbols-outlined mb-xs" style="font-variation-settings: 'FILL' 1;">photo_library</span>
+        <span class="font-label-caps text-label-caps">Gallery</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant p-sm rounded-full" href="#">
+        <span class="material-symbols-outlined mb-xs">storage</span>
+        <span class="font-label-caps text-label-caps">Backups</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant p-sm rounded-full" href="#">
+        <span class="material-symbols-outlined mb-xs">dynamic_form</span>
+        <span class="font-label-caps text-label-caps">Status</span>
+    </a>
+</nav>
+
+<!-- OVERLAYS -->
+<!-- Disconnect Modal -->
+<div class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-surface-dim/80 hidden" id="overlay-disconnect">
+    <div class="bg-surface-container border border-outline-variant rounded-xl p-xl flex flex-col items-center max-w-sm mx-md text-center shadow-2xl scale-95 transform transition-transform duration-300" id="disconnect-modal">
+        <span class="material-symbols-outlined text-error text-[48px] mb-md animate-pulse">dangerous</span>
+        <h3 class="font-headline-sm text-headline-sm text-on-surface mb-sm">Camera Disconnected</h3>
+        <p class="font-body-md text-body-md text-on-surface-variant mb-lg">Please check the USB connection to your Nikon Coolpix camera and ensure the camera is powered ON.</p>
+        <button class="w-full py-sm rounded-DEFAULT bg-surface-container-highest border border-outline-variant text-on-surface hover:bg-surface-variant transition-colors font-label-caps text-label-caps" id="btn-close-disconnect">Dismiss</button>
+    </div>
+</div>
+
+<!-- Purge Modal -->
+<div class="fixed inset-0 z-[90] bg-surface-dim/50 hidden" id="overlay-purge">
+    <div class="absolute bottom-0 left-0 w-full bg-surface-container-high rounded-t-xl border-t border-outline-variant p-md pb-[80px] md:pb-md flex flex-col items-center md:max-w-md md:left-1/2 md:-translate-x-1/2 md:bottom-md md:rounded-xl md:border" id="purge-sheet">
+        <div class="flex justify-between items-center w-full mb-md">
+            <h3 class="font-headline-sm text-headline-sm text-on-surface">Confirm Storage Purge</h3>
+            <button class="text-on-surface-variant p-xs hover:bg-surface-variant rounded-full" id="btn-close-purge">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+        <p class="font-body-md text-body-md text-on-surface-variant mb-lg text-center">
+            Warning: This action will permanently erase all photos and videos from the camera card. Make sure everything has been safely backed up.
+        </p>
+        <div class="flex gap-sm w-full">
+            <button class="flex-1 py-sm rounded-DEFAULT border border-outline-variant text-on-surface-variant hover:bg-surface-variant transition-colors font-label-caps text-label-caps" id="btn-cancel-purge">Cancel</button>
+            <button class="flex-1 py-sm rounded-DEFAULT bg-error text-on-error hover:bg-error-container transition-colors font-label-caps text-label-caps flex items-center justify-center gap-xs" id="btn-confirm-purge">
+                <span class="material-symbols-outlined text-[16px]">delete_forever</span>
+                Confirm Purge
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Media Preview Modal -->
+<div class="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-surface-dim/90 hidden" id="overlay-preview">
+    <div class="absolute top-md right-md flex gap-sm z-50">
+        <a href="#" download id="btn-download-preview" class="p-sm bg-surface-container-high/80 border border-outline-variant hover:bg-surface-container-highest rounded-full text-on-surface flex items-center justify-center transition-colors">
+            <span class="material-symbols-outlined">download</span>
+        </a>
+        <button id="btn-close-preview" class="p-sm bg-surface-container-high/80 border border-outline-variant hover:bg-surface-container-highest rounded-full text-on-surface flex items-center justify-center transition-colors">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+    </div>
+    <div class="w-full max-w-4xl p-md flex flex-col items-center justify-center" id="preview-content-box">
+        <!-- Interactive image/video tags injected here dynamically -->
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const loadingContainer = document.getElementById('loading-state');
+        const contentGrid = document.getElementById('content-grid');
+        const emptyState = document.getElementById('empty-state');
+        
+        const connectionDot = document.getElementById('connection-dot');
+        const connectionText = document.getElementById('connection-text');
+        
+        const btnBackup = document.getElementById('btn-backup');
+        const backupText = document.getElementById('backup-text');
+        const backupIcon = document.getElementById('backup-icon');
+        const backupProgress = document.getElementById('backup-progress');
+        
+        const btnPurge = document.getElementById('btn-purge');
+        const overlayPurge = document.getElementById('overlay-purge');
+        const btnConfirmPurge = document.getElementById('btn-confirm-purge');
+        
+        const overlayPreview = document.getElementById('overlay-preview');
+        const previewContentBox = document.getElementById('preview-content-box');
+        const btnDownloadPreview = document.getElementById('btn-download-preview');
+        
+        let cameraConnected = false;
+        let backupPollingInterval = null;
+        let filesData = [];
+
+        // Generate skeletons for loading view
+        for (let i = 0; i < 8; i++) {
+            const skeleton = document.createElement('div');
+            skeleton.className = 'w-full h-full min-h-[160px] rounded-lg shimmer border border-outline-variant/30 flex flex-col justify-end p-sm';
+            skeleton.innerHTML = `
+                <div class="h-3 w-1/3 bg-surface-container-highest rounded mb-xs"></div>
+                <div class="h-2 w-1/4 bg-surface-container-highest rounded"></div>
+            `;
+            loadingContainer.appendChild(skeleton);
+        }
+
+        // --- Status Check & Loop ---
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                
+                if (data.status === 'connected') {
+                    if (!cameraConnected) {
+                        cameraConnected = true;
+                        connectionDot.className = 'w-2 h-2 rounded-full bg-primary animate-pulse';
+                        connectionText.innerText = 'Nikon S2900 Connected';
+                        loadFiles();
+                    }
+                } else {
+                    cameraConnected = false;
+                    connectionDot.className = 'w-2 h-2 rounded-full bg-outline';
+                    connectionText.innerText = 'Disconnected';
+                    showDisconnect();
+                }
+            } catch (err) {
+                console.error('Status check error:', err);
+                cameraConnected = false;
+                connectionDot.className = 'w-2 h-2 rounded-full bg-outline';
+                connectionText.innerText = 'Server Offline';
+            }
+        }
+
+        function showDisconnect() {
+            document.getElementById('overlay-disconnect').classList.remove('hidden');
+            contentGrid.innerHTML = '';
+            filesData = [];
+            btnPurge.disabled = true;
+            btnPurge.classList.add('opacity-50', 'cursor-not-allowed');
+            btnBackup.disabled = true;
+            btnBackup.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        document.getElementById('btn-close-disconnect').addEventListener('click', () => {
+            document.getElementById('overlay-disconnect').classList.add('hidden');
+        });
+
+        // --- Load Gallery ---
+        async function loadFiles() {
+            loadingContainer.classList.remove('hidden');
+            contentGrid.classList.add('hidden');
+            emptyState.classList.add('hidden');
+            
+            try {
+                const res = await fetch('/api/files');
+                const data = await res.json();
+                
+                loadingContainer.classList.add('hidden');
+                
+                if (data.status === 'success' && data.files.length > 0) {
+                    filesData = data.files;
+                    contentGrid.classList.remove('hidden');
+                    populateGrid(data.files);
+                    
+                    btnPurge.disabled = false;
+                    btnPurge.classList.remove('opacity-50', 'cursor-not-allowed');
+                    btnBackup.disabled = false;
+                    btnBackup.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    filesData = [];
+                    emptyState.classList.remove('hidden');
+                    btnPurge.disabled = true;
+                    btnPurge.classList.add('opacity-50', 'cursor-not-allowed');
+                    btnBackup.disabled = true;
+                    btnBackup.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            } catch (err) {
+                console.error('Load files failed:', err);
+                loadingContainer.classList.add('hidden');
+                showDisconnect();
+            }
+        }
+
+        function populateGrid(files) {
+            contentGrid.innerHTML = '';
+            
+            files.forEach(file => {
+                const card = document.createElement('div');
+                card.className = 'relative rounded-lg overflow-hidden border border-outline-variant group cursor-pointer h-full min-h-[160px] bg-surface-container-low';
+                
+                const isVideo = file.mime.startsWith('video');
+                const gradient = `linear-gradient(135deg, #171f33, #0b1326)`;
+                
+                card.innerHTML = `
+                    <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style="background: ${gradient}">
+                        <div class="w-full h-full flex items-center justify-center opacity-25">
+                            <span class="material-symbols-outlined text-[48px]">${isVideo ? 'videocam' : 'image'}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Status Chip -->
+                    <div class="absolute top-sm right-sm bg-surface/80 backdrop-blur-sm border border-outline-variant rounded-full px-2 py-0.5 flex items-center gap-1">
+                         <div class="w-1.5 h-1.5 rounded-full ${isVideo ? 'bg-error animate-pulse' : 'bg-primary'}"></div>
+                         <span class="font-mono-data text-[9px] text-on-surface uppercase tracking-wider">${isVideo ? 'VIDEO' : 'IMAGE'}</span>
+                    </div>
+                    
+                    <!-- Scrim & Details -->
+                    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-surface-dim to-transparent p-sm pt-xl flex flex-col justify-end translate-y-1 group-hover:translate-y-0 transition-transform">
+                        <span class="font-mono-data text-mono-data text-on-surface truncate">${file.name}</span>
+                        <span class="font-label-caps text-[9px] text-on-surface-variant opacity-70">${file.size}</span>
+                    </div>
+                `;
+                
+                card.addEventListener('click', () => openPreview(file));
+                contentGrid.appendChild(card);
+            });
+        }
+
+        // --- Preview Modal ---
+        function openPreview(file) {
+            previewContentBox.innerHTML = '';
+            overlayPreview.classList.remove('hidden');
+            
+            const isVideo = file.mime.startsWith('video');
+            const streamUrl = `/api/files/${file.index}/stream`;
+            
+            btnDownloadPreview.href = streamUrl;
+            btnDownloadPreview.download = file.name;
+            
+            if (isVideo) {
+                // If browser can render (like MP4/MOV) we attempt playback
+                previewContentBox.innerHTML = `
+                    <video id="player" controls autoplay class="max-w-full max-h-[70vh] rounded-lg border border-outline-variant shadow-2xl">
+                        <source src="${streamUrl}" type="${file.mime}">
+                        Your browser does not support playing this video format natively.
+                    </video>
+                    <div class="mt-md text-on-surface-variant text-center font-mono-data">
+                        ${file.name} (${file.size})<br>
+                        <span class="text-xs text-outline">AVI/MOV file formats may require local download to play.</span>
+                    </div>
+                `;
+            } else {
+                previewContentBox.innerHTML = `
+                    <img src="${streamUrl}" alt="${file.name}" class="max-w-full max-h-[70vh] object-contain rounded-lg border border-outline-variant shadow-2xl">
+                    <div class="mt-md text-on-surface text-center font-mono-data">${file.name} (${file.size})</div>
+                `;
+            }
+        }
+
+        document.getElementById('btn-close-preview').addEventListener('click', closePreview);
+        overlayPreview.addEventListener('click', (e) => {
+            if (e.target === overlayPreview || e.target === previewContentBox) closePreview();
+        });
+
+        function closePreview() {
+            const player = document.getElementById('player');
+            if (player) {
+                player.pause();
+                player.src = '';
+            }
+            overlayPreview.classList.add('hidden');
+        }
+
+        // --- Backup Action ---
+        btnBackup.addEventListener('click', async () => {
+            if (btnBackup.disabled) return;
+            
+            btnBackup.disabled = true;
+            btnBackup.classList.replace('bg-primary', 'bg-surface-container-high');
+            btnBackup.classList.replace('text-on-primary', 'text-primary');
+            backupText.innerText = "Connecting...";
+            backupIcon.innerText = "sync";
+            backupIcon.classList.add('animate-spin');
+            
+            try {
+                const res = await fetch('/api/backup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ all: true })
+                });
+                const data = await res.json();
+                
+                if (data.status === 'started') {
+                    pollBackupProgress();
+                } else {
+                    resetBackupBtn();
+                }
+            } catch (err) {
+                console.error('Backup trigger failed:', err);
+                resetBackupBtn();
+            }
+        });
+
+        function pollBackupProgress() {
+            backupPollingInterval = setInterval(async () => {
+                try {
+                    const res = await fetch('/api/backup/status');
+                    const data = await res.json();
+                    
+                    if (data.active) {
+                        const pct = data.total_files > 0 ? (data.completed_files / data.total_files) * 100 : 0;
+                        backupProgress.style.width = `${pct}%`;
+                        backupText.innerText = `Syncing (${data.completed_files}/${data.total_files})`;
+                    } else {
+                        clearInterval(backupPollingInterval);
+                        finishBackup(data);
+                    }
+                } catch (err) {
+                    clearInterval(backupPollingInterval);
+                    console.error('Backup status polling failed:', err);
+                    resetBackupBtn();
+                }
+            }, 1000);
+        }
+
+        function finishBackup(statusData) {
+            backupProgress.style.width = '100%';
+            backupIcon.classList.remove('animate-spin');
+            
+            if (statusData.errors && statusData.errors.length > 0) {
+                backupIcon.innerText = 'warning';
+                backupText.innerText = 'Sync Completed with Warnings';
+                console.warn('Backup completed with errors:', statusData.errors);
+            } else {
+                backupIcon.innerText = 'done_all';
+                backupText.innerText = 'Backup Completed!';
+            }
+            
+            setTimeout(() => {
+                resetBackupBtn();
+                loadFiles();
+            }, 3000);
+        }
+
+        function resetBackupBtn() {
+            backupProgress.style.width = '0%';
+            backupIcon.classList.remove('animate-spin');
+            backupIcon.innerText = 'cloud_upload';
+            backupText.innerText = 'Backup All';
+            btnBackup.disabled = false;
+            btnBackup.classList.replace('bg-surface-container-high', 'bg-primary');
+            btnBackup.classList.replace('text-primary', 'text-on-primary');
+        }
+
+        // --- Purge Action (Card Format Safe Deletes) ---
+        btnPurge.addEventListener('click', () => {
+            if (btnPurge.disabled) return;
+            overlayPurge.classList.remove('hidden');
+        });
+
+        document.getElementById('btn-close-purge').addEventListener('click', closePurge);
+        document.getElementById('btn-cancel-purge').addEventListener('click', closePurge);
+        
+        function closePurge() {
+            overlayPurge.classList.add('hidden');
+        }
+
+        btnConfirmPurge.addEventListener('click', async () => {
+            closePurge();
+            
+            btnPurge.disabled = true;
+            btnBackup.disabled = true;
+            
+            const indices = filesData.map(f => f.index);
+            
+            try {
+                const res = await fetch('/api/files/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        indices: indices,
+                        confirm: true,
+                        token: 'CONFIRM_DELETE_COOLPIX'
+                    })
+                });
+                
+                const data = await res.json();
+                if (data.status === 'success') {
+                    loadFiles();
+                } else {
+                    alert('Purge operation partially failed. Review server logs.');
+                    loadFiles();
+                }
+            } catch (err) {
+                console.error('Purge failed:', err);
+                alert('Connection error during purge.');
+                loadFiles();
+            }
+        });
+
+        // Initialize connection loop
+        checkStatus();
+        setInterval(checkStatus, 3000);
+    });
+</script>
+</body>
+</html>

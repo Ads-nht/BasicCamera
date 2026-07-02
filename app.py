@@ -4,7 +4,7 @@ import asyncio
 import logging
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
 from pydantic import BaseModel
 
 # Setup logging
@@ -16,6 +16,16 @@ app = FastAPI(
     description="Backend API to manage, stream, and backup media from Nikon DSC Coolpix S2900 over PTP",
     version="1.0.0"
 )
+
+@app.get("/", response_class=HTMLResponse)
+async def get_index():
+    """Serves the main dashboard user interface."""
+    try:
+        with open("index.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except Exception as e:
+        logger.error(f"Failed to read index.html: {e}")
+        return HTMLResponse(content=f"<h2>UI Files Missing</h2><p>{str(e)}</p>", status_code=404)
 
 # ==============================================================================
 # CONFIGURATION & GLOBAL STATE

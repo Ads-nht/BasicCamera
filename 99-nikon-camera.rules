@@ -1,0 +1,30 @@
+# ==============================================================================
+# Udev Rules for Nikon DSC Coolpix S2900 (PTP Camera)
+# ==============================================================================
+# Vendor ID: 04b0
+# Product ID: 035e
+#
+# Description:
+#   Automatically starts the 'camera-app' docker container when the camera is
+#   connected to the USB bus, and stops it when the camera is unplugged.
+#
+# Installation:
+#   1. Copy this file to /etc/udev/rules.d/
+#      sudo cp 99-nikon-camera.rules /etc/udev/rules.d/
+#   2. Reload the udev rules:
+#      sudo udevadm control --reload-rules && sudo udevadm trigger
+# ==============================================================================
+
+# When Nikon Camera is plugged in: Start Docker Container
+SUBSYSTEM=="usb", ATTR{idVendor}=="04b0", ATTR{idProduct}=="035e", ACTION=="add", RUN+="/usr/bin/docker start camera-app"
+
+# When Nikon Camera is unplugged: Stop Docker Container
+SUBSYSTEM=="usb", ATTR{idVendor}=="04b0", ATTR{idProduct}=="035e", ACTION=="remove", RUN+="/usr/bin/docker stop camera-app"
+
+# Note on GVFS (Gnome/KDE Virtual File System) Interference:
+# ------------------------------------------------------------------------------
+# Modern desktop environments might lock the camera automatically via gvfs-gphoto2-volume-monitor.
+# If the FastAPI logs show "Could not claim the USB device" or device busy errors:
+# Run:
+#   killall gvfsd-gphoto2
+# or disable the gvfs gphoto2 volume monitor service to free the device for Docker.

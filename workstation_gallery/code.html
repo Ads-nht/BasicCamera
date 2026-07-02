@@ -1,0 +1,297 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Surveillance Core - Gallery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#283044",
+                        "on-secondary-container": "#abb9d2",
+                        "secondary-container": "#3c4a5e",
+                        "on-surface-variant": "#bbcabf",
+                        "surface-tint": "#4edea3",
+                        "on-tertiary-container": "#79000e",
+                        "on-primary-fixed-variant": "#005236",
+                        "secondary-fixed-dim": "#b9c7e0",
+                        "on-surface": "#dae2fd",
+                        "primary-container": "#10b981",
+                        "on-primary-container": "#00422b",
+                        "surface-container": "#171f33",
+                        "secondary": "#b9c7e0",
+                        "on-secondary-fixed": "#0d1c2f",
+                        "tertiary": "#ffb3ad",
+                        "surface-dim": "#0b1326",
+                        "inverse-primary": "#006c49",
+                        "on-background": "#dae2fd",
+                        "surface-variant": "#2d3449",
+                        "on-tertiary": "#68000a",
+                        "on-secondary": "#233144",
+                        "tertiary-container": "#ff7a73",
+                        "tertiary-fixed-dim": "#ffb3ad",
+                        "surface-bright": "#31394d",
+                        "primary": "#4edea3",
+                        "outline-variant": "#3c4a42",
+                        "surface-container-low": "#131b2e",
+                        "on-primary": "#003824",
+                        "secondary-fixed": "#d5e3fd",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#060e20",
+                        "tertiary-fixed": "#ffdad7",
+                        "primary-fixed": "#6ffbbe",
+                        "on-secondary-fixed-variant": "#3a485c",
+                        "on-primary-fixed": "#002113",
+                        "error": "#ffb4ab",
+                        "primary-fixed-dim": "#4edea3",
+                        "surface": "#0b1326",
+                        "outline": "#86948a",
+                        "background": "#0b1326",
+                        "on-tertiary-fixed": "#410004",
+                        "on-error": "#690005",
+                        "surface-container-high": "#222a3d",
+                        "on-error-container": "#ffdad6",
+                        "inverse-surface": "#dae2fd",
+                        "on-tertiary-fixed-variant": "#930013",
+                        "surface-container-highest": "#2d3449"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xl": "40px",
+                        "sidebar-width": "260px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "base": "4px",
+                        "bottom-nav-height": "64px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "mono-data": ["Geist"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-caps": ["Geist"],
+                        "display-lg": ["Inter"],
+                        "headline-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "mono-data": ["12px", { "lineHeight": "1", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-sm": ["13px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-caps": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "headline-sm": ["18px", { "lineHeight": "1.4", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #3c4a5e;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen overflow-hidden flex flex-col antialiased">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center h-16 px-md w-full z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant fixed top-0 w-full flat no shadows text-primary dark:text-primary">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-[24px]">sensors</span>
+<h1 class="font-display-lg text-display-lg tracking-tight text-primary">Basic Camera</h1>
+</div>
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs px-sm py-xs bg-surface-container rounded border border-outline-variant">
+<div class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_#4edea3]"></div>
+<span class="font-mono-data text-mono-data text-primary">SYS_OK: 192.168.1.140</span>
+</div>
+<button class="p-sm text-on-surface-variant hover:bg-surface-container-high transition-colors active:scale-95 duration-150 rounded">
+
+</button>
+</div>
+</header>
+<div class="flex flex-1 pt-16 h-full w-full">
+<!-- NavigationDrawer -->
+<nav class="hidden md:flex flex-col py-lg gap-sm fixed left-0 top-0 h-full w-[260px] bg-surface-container dark:bg-surface-container border-r border-outline-variant pt-24 z-40">
+<h2 class="font-display-lg text-display-lg text-primary mb-lg px-md hidden">NVR MANAGER</h2>
+<ul class="flex flex-col w-full px-sm gap-xs">
+<li class="">
+
+</li>
+<li class="">
+<a class="flex items-center gap-sm px-md py-sm rounded-r-lg text-primary border-l-2 border-primary bg-primary-container/10 hover:bg-surface-container-highest transition-all active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">grid_view</span>
+<span class="font-label-caps text-label-caps">Gallery</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-sm px-md py-sm rounded-r-lg text-on-surface-variant hover:bg-surface-container-highest transition-all active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">cloud_download</span>
+<span class="font-label-caps text-label-caps">Server Backups</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-sm px-md py-sm rounded-r-lg text-on-surface-variant hover:bg-surface-container-highest transition-all active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">analytics</span>
+<span class="font-label-caps text-label-caps">System Status</span>
+</a>
+</li>
+<li class="">
+
+</li>
+</ul>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-[260px] bg-background relative flex flex-col h-full z-10 overflow-hidden">
+<!-- Workstation Toolbar -->
+<div class="h-14 border-b border-outline-variant bg-surface-container-low flex items-center justify-between px-md shrink-0">
+<div class="flex items-center gap-md">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+<input class="bg-surface border-b border-outline-variant border-x-0 border-t-0 focus:ring-0 focus:border-primary text-body-sm font-body-sm text-on-surface pl-lg pr-sm py-xs w-64 bg-transparent outline-none transition-colors" placeholder="Search events..." type="text">
+</div>
+<div class="flex items-center gap-xs border-l border-outline-variant pl-md">
+<button class="flex items-center gap-xs px-sm py-xs rounded hover:bg-surface-container transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+<span class="font-label-caps text-label-caps">Filter</span>
+</button>
+<button class="flex items-center gap-xs px-sm py-xs rounded hover:bg-surface-container transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+<span class="font-label-caps text-label-caps">Date Range</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-sm">
+<button class="flex items-center gap-xs px-md py-xs rounded border border-outline-variant hover:bg-surface-container text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+<span class="font-label-caps text-label-caps text-error">Purge</span>
+</button>
+<button class="flex items-center gap-xs px-md py-xs rounded bg-primary text-on-primary hover:bg-primary-fixed transition-colors shadow-[0_0_10px_rgba(78,222,163,0.2)]">
+<span class="material-symbols-outlined text-[18px]">backup</span>
+<span class="font-label-caps text-label-caps">Backup All</span>
+</button>
+</div>
+</div>
+<!-- Asset Grid & Preview Split -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Gallery Grid -->
+<div class="flex-1 p-md overflow-y-auto custom-scrollbar">
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-sm auto-rows-max">
+<!-- Video Tile 1 -->
+<div class="relative group cursor-pointer aspect-video bg-surface-container rounded border border-outline-variant overflow-hidden hover:border-primary transition-colors">
+<div class="bg-cover bg-center w-full h-full opacity-60 group-hover:opacity-100 transition-opacity" data-alt="A dimly lit, high-contrast surveillance camera view of a modern industrial warehouse at night, deep slate shadows with harsh stark white floodlights, subtle green digital overlay artifacts, professional CCTV aesthetic." style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuDNnAYKQGiel3Y4-rcwePKfZfp2BYQ1FeAplkw6KAums3PDO-ecjyN_lO7uhAHk-KWyzwIwDNEDDtrR1D0lz72XxBLkp-KGZk3jnJj9slsw2FevyN8d5BTqtmbccr5SkjZiOCi2fRi8DFcEsaAXPGzIDtCd8qIvE5wBngDVuVY2R4RsYi42OLCzJ8zL60DRJT6DUmpyHeainxewYkiwHMCoqiB_B2Y4jjM4NAJRB3mTQGNuhayRengq5Ic7fDeJe8CT6c4VgLY--C4&quot;);"></div>
+<div class="absolute top-sm right-sm px-2 py-0.5 rounded-full bg-error/20 border border-error/50 flex items-center gap-1 backdrop-blur-sm">
+<div class="w-1.5 h-1.5 rounded-full bg-error animate-pulse"></div>
+<span class="font-mono-data text-mono-data text-error text-[10px]">MOTION</span>
+</div>
+<div class="absolute bottom-0 left-0 w-full p-sm bg-gradient-to-t from-background/90 to-transparent flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface">CAM_04_NORTH</span>
+<span class="font-mono-data text-mono-data text-on-surface-variant text-[10px]">10:42:15 - 11/12/23</span>
+</div>
+<div class="absolute inset-0 border-2 border-primary opacity-0 group-hover:opacity-100 transition-opacity rounded pointer-events-none z-10"></div>
+</div>
+<!-- Video Tile 2 -->
+<div class="relative group cursor-pointer aspect-video bg-surface-container rounded border border-outline-variant overflow-hidden hover:border-primary transition-colors">
+<div class="bg-cover bg-center w-full h-full opacity-60 group-hover:opacity-100 transition-opacity" data-alt="A monochromatic surveillance view of an empty corporate parking garage, harsh fluorescent lighting casting deep slate shadows on concrete, stark professional security camera aesthetic." style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuDB3K8afN6qOvNfWJnR5WWl5ibF67jXYaj0L0RkKp4uy63HvcXyen17l4ijYNyJDq292PyDN_XbfkyP44bux9WD9wSUPWJ_6Uzcpg5PhEFZb0BnTkh3Rs2Tf0niLegTCBqQvk999FfdIxYz78qY8KKyLs11qbp20Ha_EQhQI0aq3-R9hC5W0GtqNt6Dx1mdgQ6sursYG4uUPVL9eMjvu5BL0kUYhONdLsiZSmVb18bxzXFvl9tc49qVGW7xXdQFsJr7c1j7gt1SVEg&quot;);"></div>
+<div class="absolute top-sm right-sm px-2 py-0.5 rounded-full bg-surface-variant/80 border border-outline-variant flex items-center gap-1 backdrop-blur-sm">
+<span class="font-mono-data text-mono-data text-on-surface-variant text-[10px]">00:15:20</span>
+</div>
+<div class="absolute bottom-0 left-0 w-full p-sm bg-gradient-to-t from-background/90 to-transparent flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface">CAM_01_ENTRY</span>
+<span class="font-mono-data text-mono-data text-on-surface-variant text-[10px]">08:15:00 - 11/12/23</span>
+</div>
+</div>
+<!-- Skeleton Tile -->
+<div class="relative aspect-video bg-surface-container rounded border border-outline-variant overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-r from-[#1e293b] via-[#334155] to-[#1e293b] bg-[length:200%_100%] animate-[shimmer_1.5s_infinite]"></div>
+<div class="absolute bottom-0 left-0 w-full p-sm bg-gradient-to-t from-background/90 to-transparent flex flex-col gap-1 z-10">
+<div class="w-24 h-3 bg-surface-variant rounded"></div>
+<div class="w-32 h-2 bg-surface-variant rounded"></div>
+</div>
+</div>
+<style>
+                            @keyframes shimmer {
+                                0% { background-position: 200% 0; }
+                                100% { background-position: -200% 0; }
+                            }
+                        </style>
+</div>
+</div>
+<!-- Preview Sidebar (Split Screen) -->
+<div class="w-[400px] border-l border-outline-variant bg-surface-container-low hidden lg:flex flex-col shrink-0 relative">
+<div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low sticky top-0 z-10">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Asset Details</h3>
+<button class="text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined text-[20px]">close</span></button>
+</div>
+<div class="p-md flex flex-col gap-md overflow-y-auto custom-scrollbar">
+<div class="aspect-video bg-black rounded border border-outline-variant relative overflow-hidden flex items-center justify-center">
+<div class="absolute inset-0 bg-cover bg-center opacity-80" data-alt="A dimly lit, high-contrast surveillance camera view of a modern industrial warehouse at night, deep slate shadows with harsh stark white floodlights, subtle green digital overlay artifacts, professional CCTV aesthetic." style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuA8xBRnrfezq7RaGZEG1nLTHSnNXElbVwfaC3vHmVBluHg396S9C4GHdedCX3yaJkh0HhQp8qdJoL2FbTrwWdJEBFSc66F6szywRdv0Gl23Vn9KRevbVSgPklgyDSusSsB00H8oODV2mS4rhN5vugxijsVH1vr0AsPuPF4F3oA6Z_duGib9cL8nlP_Ce9pM-wRkqGsEGxevLSfL9_Yo3LHfJDQp4B023NmnOlOyEGS0qGlVCSTbi2EXhQeEQq_HVq8qDcGX5Vg5uFs&quot;);"></div>
+<button class="w-12 h-12 rounded-full bg-surface-container/50 border border-outline-variant backdrop-blur-md flex items-center justify-center hover:bg-primary/20 hover:border-primary transition-all z-10 text-on-surface hover:text-primary">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: &quot;FILL&quot; 1;">play_arrow</span>
+</button>
+</div>
+<div class="bg-surface-container rounded border border-outline-variant p-sm">
+<table class="w-full text-left border-collapse">
+<tbody class="font-mono-data text-mono-data divide-y divide-outline-variant">
+<tr><td class="py-1 text-on-surface-variant w-1/3">Source</td><td class="py-1 text-on-surface">CAM_04_NORTH</td></tr>
+<tr><td class="py-1 text-on-surface-variant">Timestamp</td><td class="py-1 text-on-surface">2023-11-12 10:42:15</td></tr>
+<tr><td class="py-1 text-on-surface-variant">Duration</td><td class="py-1 text-on-surface">00:03:45</td></tr>
+<tr><td class="py-1 text-on-surface-variant">Size</td><td class="py-1 text-on-surface">45.2 MB</td></tr>
+<tr></tr>
+</tbody>
+</table>
+</div>
+<div class="flex gap-sm mt-auto pt-md">
+<button class="flex-1 py-sm rounded border border-outline-variant text-on-surface hover:bg-surface-container transition-colors font-label-caps text-label-caps flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">download</span> Export
+                            </button>
+
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- BottomNavBar (Hidden on md+) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full h-[64px] rounded-t-full border-t border-outline-variant shadow-lg z-50 flex justify-around items-center px-gutter bg-surface-container-lowest/90 backdrop-blur-lg">
+<a class="flex flex-col items-center justify-center text-primary font-bold active:bg-surface-container-high touch-manipulation scale-95 duration-100 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: &quot;FILL&quot; 1;">photo_library</span>
+<span class="font-label-caps text-[10px] mt-1">Gallery</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-high touch-manipulation scale-95 duration-100 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[24px]">storage</span>
+<span class="font-label-caps text-[10px] mt-1">Backups</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-high touch-manipulation scale-95 duration-100 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[24px]">dynamic_form</span>
+<span class="font-label-caps text-[10px] mt-1">Status</span>
+</a>
+</nav>
+
+
+</body></html>

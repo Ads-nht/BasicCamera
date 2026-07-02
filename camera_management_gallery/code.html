@@ -1,0 +1,670 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Surveillance Core - Gallery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@400;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container": "#171f33",
+                        "on-error": "#690005",
+                        "on-secondary-container": "#abb9d2",
+                        "on-background": "#dae2fd",
+                        "surface-container-lowest": "#060e20",
+                        "inverse-primary": "#006c49",
+                        "tertiary-container": "#ff7a73",
+                        "secondary": "#b9c7e0",
+                        "tertiary-fixed-dim": "#ffb3ad",
+                        "inverse-on-surface": "#283044",
+                        "surface": "#0b1326",
+                        "on-tertiary": "#68000a",
+                        "outline-variant": "#3c4a42",
+                        "secondary-fixed-dim": "#b9c7e0",
+                        "primary-fixed": "#6ffbbe",
+                        "surface-container-high": "#222a3d",
+                        "on-surface-variant": "#bbcabf",
+                        "on-primary": "#003824",
+                        "on-surface": "#dae2fd",
+                        "on-tertiary-container": "#79000e",
+                        "primary": "#4edea3",
+                        "on-primary-container": "#00422b",
+                        "tertiary-fixed": "#ffdad7",
+                        "surface-container-low": "#131b2e",
+                        "on-primary-fixed-variant": "#005236",
+                        "on-tertiary-fixed-variant": "#930013",
+                        "tertiary": "#ffb3ad",
+                        "error": "#ffb4ab",
+                        "surface-variant": "#2d3449",
+                        "surface-dim": "#0b1326",
+                        "error-container": "#93000a",
+                        "outline": "#86948a",
+                        "on-secondary-fixed": "#0d1c2f",
+                        "surface-container-highest": "#2d3449",
+                        "surface-bright": "#31394d",
+                        "surface-tint": "#4edea3",
+                        "background": "#0b1326",
+                        "primary-container": "#10b981",
+                        "secondary-container": "#3c4a5e",
+                        "on-secondary": "#233144",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed": "#d5e3fd",
+                        "on-primary-fixed": "#002113",
+                        "on-tertiary-fixed": "#410004",
+                        "inverse-surface": "#dae2fd",
+                        "primary-fixed-dim": "#4edea3",
+                        "on-secondary-fixed-variant": "#3a485c"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "md": "16px",
+                        "bottom-nav-height": "64px",
+                        "sidebar-width": "260px",
+                        "xs": "4px",
+                        "base": "4px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "gutter": "16px",
+                        "xl": "40px"
+                    },
+                    fontFamily: {
+                        "display-lg": ["Inter"],
+                        "label-caps": ["Geist"],
+                        "headline-sm": ["Inter"],
+                        "mono-data": ["Geist"],
+                        "body-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    fontSize: {
+                        "display-lg": ["32px", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "label-caps": ["11px", { lineHeight: "1", letterSpacing: "0.05em", fontWeight: "600" }],
+                        "headline-sm": ["18px", { lineHeight: "1.4", fontWeight: "500" }],
+                        "mono-data": ["12px", { lineHeight: "1", letterSpacing: "0em", fontWeight: "400" }],
+                        "body-md": ["14px", { lineHeight: "1.5", fontWeight: "400" }],
+                        "body-sm": ["13px", { lineHeight: "1.5", fontWeight: "400" }],
+                        "headline-md": ["24px", { lineHeight: "1.3", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .shimmer {
+            background: linear-gradient(90deg, #1e293b 0%, #334155 50%, #1e293b 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        /* Overlay slide up animation */
+        .slide-up-enter { transform: translateY(100%); opacity: 0; }
+        .slide-up-enter-active { transform: translateY(0); opacity: 1; transition: all 0.3s ease-out; }
+        .slide-up-exit { transform: translateY(0); opacity: 1; }
+        .slide-up-exit-active { transform: translateY(100%); opacity: 0; transition: all 0.2s ease-in; }
+
+        /* Blur overlay */
+        .blur-enter { opacity: 0; backdrop-filter: blur(0px); }
+        .blur-enter-active { opacity: 1; backdrop-filter: blur(12px); transition: all 0.4s ease; }
+        .blur-exit { opacity: 1; backdrop-filter: blur(12px); }
+        .blur-exit-active { opacity: 0; backdrop-filter: blur(0px); transition: all 0.3s ease; }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col md:flex-row overflow-hidden select-none">
+<!-- NavigationDrawer (Desktop) -->
+<nav class="hidden md:flex flex-col py-lg gap-sm fixed left-0 top-0 h-full w-[260px] bg-surface-container dark:bg-surface-container border-r border-outline-variant z-40">
+<div class="font-display-lg text-display-lg text-primary mb-lg px-md truncate">NVR MANAGER</div>
+<div class="flex flex-col gap-xs mt-lg w-full">
+<a class="flex items-center px-md py-sm mx-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-highest transition-all active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined mr-md">videocam</span>
+<span class="font-label-caps text-label-caps">Live View</span>
+</a>
+<a class="flex items-center px-md py-sm mx-sm rounded-DEFAULT text-primary border-l-2 border-primary bg-primary-container/10 hover:bg-surface-container-highest transition-all active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined mr-md" style="font-variation-settings: &quot;FILL&quot; 1;">grid_view</span>
+<span class="font-label-caps text-label-caps">Gallery</span>
+</a>
+<a class="flex items-center px-md py-sm mx-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-highest transition-all active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined mr-md">cloud_download</span>
+<span class="font-label-caps text-label-caps">Server Backups</span>
+</a>
+<a class="flex items-center px-md py-sm mx-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-highest transition-all active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined mr-md">analytics</span>
+<span class="font-label-caps text-label-caps">System Status</span>
+</a>
+<a class="flex items-center px-md py-sm mx-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-highest transition-all active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined mr-md">shield</span>
+<span class="font-label-caps text-label-caps">Security Logs</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-screen md:ml-[260px] relative">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center h-16 px-md w-full z-30 bg-surface/80 backdrop-blur-md border-b border-outline-variant fixed top-0 md:relative md:w-auto">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary dark:text-primary">sensors</span>
+<h1 class="font-headline-sm text-headline-sm md:text-headline-sm text-primary dark:text-primary tracking-tight truncate">Basic Camera</h1>
+</div>
+<!-- Connection Telemetry -->
+<div class="flex items-center gap-sm bg-surface-container-low px-sm py-xs rounded-full border border-outline-variant cursor-pointer hover:bg-surface-container-high transition-colors active:scale-95 duration-150" id="telemetry-btn">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse" id="connection-dot"></div>
+<span class="font-mono-data text-mono-data text-on-surface-variant hidden sm:inline" id="connection-text">Nikon S2900 Connected</span>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-container-high transition-colors p-sm rounded-full active:scale-95 duration-150 ml-sm">
+<span class="material-symbols-outlined">settings_remote</span>
+</button>
+</header>
+<!-- Canvas -->
+<div class="flex-1 overflow-y-auto mt-16 md:mt-0 mb-[64px] md:mb-0 p-md relative hide-scrollbar" id="main-canvas">
+<!-- Actions Toolbar -->
+<div class="flex justify-between items-center mb-lg sticky top-0 z-20 bg-background/90 backdrop-blur-md py-sm rounded-lg border border-outline-variant/30 px-sm shadow-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant">folder_open</span>
+<span class="font-label-caps text-label-caps text-on-surface">LOCAL STORAGE</span>
+</div>
+<div class="flex gap-sm">
+<button class="px-md py-xs rounded-DEFAULT border border-outline-variant text-error hover:bg-error-container/20 transition-colors font-label-caps text-label-caps flex items-center gap-xs" id="btn-purge">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+                        Purge
+                    </button>
+<button class="px-md py-xs rounded-DEFAULT bg-primary text-on-primary hover:bg-primary-fixed-dim transition-colors font-label-caps text-label-caps flex items-center gap-xs relative overflow-hidden" id="btn-backup">
+<span class="material-symbols-outlined text-[16px] transition-transform duration-300" id="backup-icon">cloud_upload</span>
+<span id="backup-text" class="">Backup All</span>
+<!-- Progress overlay -->
+<div class="absolute left-0 top-0 bottom-0 bg-inverse-primary/30 w-0 transition-all duration-75" id="backup-progress"></div>
+</button>
+</div>
+</div>
+<!-- Loading State (Skeleton) -->
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-sm hidden" id="loading-state">
+<!-- Skeleton items injected via JS -->
+<div class="w-full h-full min-h-[160px] rounded-lg shimmer border border-outline-variant/30 flex flex-col justify-end p-sm">
+                    <div class="h-3 w-1/3 bg-surface-container-highest rounded mb-xs"></div>
+                    <div class="h-2 w-1/4 bg-surface-container-highest rounded"></div>
+                </div><div class="w-full h-full min-h-[160px] rounded-lg shimmer border border-outline-variant/30 flex flex-col justify-end p-sm">
+                    <div class="h-3 w-1/3 bg-surface-container-highest rounded mb-xs"></div>
+                    <div class="h-2 w-1/4 bg-surface-container-highest rounded"></div>
+                </div><div class="w-full h-full min-h-[160px] rounded-lg shimmer border border-outline-variant/30 flex flex-col justify-end p-sm">
+                    <div class="h-3 w-1/3 bg-surface-container-highest rounded mb-xs"></div>
+                    <div class="h-2 w-1/4 bg-surface-container-highest rounded"></div>
+                </div><div class="w-full h-full min-h-[160px] rounded-lg shimmer border border-outline-variant/30 flex flex-col justify-end p-sm">
+                    <div class="h-3 w-1/3 bg-surface-container-highest rounded mb-xs"></div>
+                    <div class="h-2 w-1/4 bg-surface-container-highest rounded"></div>
+                </div><div class="w-full h-full min-h-[160px] rounded-lg shimmer border border-outline-variant/30 flex flex-col justify-end p-sm">
+                    <div class="h-3 w-1/3 bg-surface-container-highest rounded mb-xs"></div>
+                    <div class="h-2 w-1/4 bg-surface-container-highest rounded"></div>
+                </div><div class="w-full h-full min-h-[160px] rounded-lg shimmer border border-outline-variant/30 flex flex-col justify-end p-sm">
+                    <div class="h-3 w-1/3 bg-surface-container-highest rounded mb-xs"></div>
+                    <div class="h-2 w-1/4 bg-surface-container-highest rounded"></div>
+                </div><div class="w-full h-full min-h-[160px] rounded-lg shimmer border border-outline-variant/30 flex flex-col justify-end p-sm">
+                    <div class="h-3 w-1/3 bg-surface-container-highest rounded mb-xs"></div>
+                    <div class="h-2 w-1/4 bg-surface-container-highest rounded"></div>
+                </div><div class="w-full h-full min-h-[160px] rounded-lg shimmer border border-outline-variant/30 flex flex-col justify-end p-sm">
+                    <div class="h-3 w-1/3 bg-surface-container-highest rounded mb-xs"></div>
+                    <div class="h-2 w-1/4 bg-surface-container-highest rounded"></div>
+                </div></div>
+<!-- Empty State -->
+<div class="hidden flex-col items-center justify-center h-64 text-center mt-xl border border-dashed border-outline-variant rounded-lg p-lg bg-surface-container-low/50" id="empty-state">
+<span class="material-symbols-outlined text-[48px] text-on-surface-variant mb-sm opacity-50">cleaning_services</span>
+<p class="font-headline-sm text-headline-sm text-on-surface mb-xs">Your camera storage is clean.</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-sm">No new footage found on the connected device. New captures will appear here automatically.</p>
+</div>
+<!-- Content Grid (Populated via JS) -->
+<div class="grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-sm auto-rows-[160px] grid" id="content-grid">
+<!-- Items injected via JS to simulate loading -->
+<div class="relative rounded-lg overflow-hidden border border-outline-variant group cursor-pointer h-full min-h-[160px] bg-surface-container-low">
+                        <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style="background: linear-gradient(135deg, #1e293b, #0f172a)">
+                            <!-- Minimalist icon instead of actual image for surveillance aesthetic -->
+                            <div class="w-full h-full flex items-center justify-center opacity-20">
+                                <span class="material-symbols-outlined text-[48px]">image</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Chip -->
+                        <div class="absolute top-sm right-sm bg-surface/80 backdrop-blur-sm border border-outline-variant rounded-full px-2 py-0.5 flex items-center gap-1">
+                             <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                             <span class="font-mono-data text-[9px] text-on-surface uppercase tracking-wider">RAW</span>
+                        </div>
+                        
+                        <!-- Scrim & Details -->
+                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-surface-dim to-transparent p-sm pt-xl flex flex-col justify-end translate-y-1 group-hover:translate-y-0 transition-transform">
+                            <span class="font-mono-data text-mono-data text-on-surface truncate">NKN_001.raw</span>
+                            <span class="font-label-caps text-[9px] text-on-surface-variant opacity-70">10:42 AM</span>
+                        </div>
+                    </div><div class="relative rounded-lg overflow-hidden border border-outline-variant group cursor-pointer h-full min-h-[160px] bg-surface-container-low">
+                        <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style="background: linear-gradient(135deg, #1e293b, #0f172a)">
+                            <!-- Minimalist icon instead of actual image for surveillance aesthetic -->
+                            <div class="w-full h-full flex items-center justify-center opacity-20">
+                                <span class="material-symbols-outlined text-[48px]">image</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Chip -->
+                        <div class="absolute top-sm right-sm bg-surface/80 backdrop-blur-sm border border-outline-variant rounded-full px-2 py-0.5 flex items-center gap-1">
+                             <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                             <span class="font-mono-data text-[9px] text-on-surface uppercase tracking-wider">RAW</span>
+                        </div>
+                        
+                        <!-- Scrim & Details -->
+                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-surface-dim to-transparent p-sm pt-xl flex flex-col justify-end translate-y-1 group-hover:translate-y-0 transition-transform">
+                            <span class="font-mono-data text-mono-data text-on-surface truncate">NKN_002.raw</span>
+                            <span class="font-label-caps text-[9px] text-on-surface-variant opacity-70">10:45 AM</span>
+                        </div>
+                    </div><div class="relative rounded-lg overflow-hidden border border-outline-variant group cursor-pointer h-full min-h-[160px] bg-surface-container-low">
+                        <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style="background: linear-gradient(135deg, #1e293b, #0f172a)">
+                            <!-- Minimalist icon instead of actual image for surveillance aesthetic -->
+                            <div class="w-full h-full flex items-center justify-center opacity-20">
+                                <span class="material-symbols-outlined text-[48px]">image</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Chip -->
+                        <div class="absolute top-sm right-sm bg-surface/80 backdrop-blur-sm border border-outline-variant rounded-full px-2 py-0.5 flex items-center gap-1">
+                             <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                             <span class="font-mono-data text-[9px] text-on-surface uppercase tracking-wider">RAW</span>
+                        </div>
+                        
+                        <!-- Scrim & Details -->
+                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-surface-dim to-transparent p-sm pt-xl flex flex-col justify-end translate-y-1 group-hover:translate-y-0 transition-transform">
+                            <span class="font-mono-data text-mono-data text-on-surface truncate">NKN_003.raw</span>
+                            <span class="font-label-caps text-[9px] text-on-surface-variant opacity-70">11:01 AM</span>
+                        </div>
+                    </div><div class="relative rounded-lg overflow-hidden border border-outline-variant group cursor-pointer h-full min-h-[160px] bg-surface-container-low">
+                        <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style="background: linear-gradient(135deg, #1e293b, #0f172a)">
+                            <!-- Minimalist icon instead of actual image for surveillance aesthetic -->
+                            <div class="w-full h-full flex items-center justify-center opacity-20">
+                                <span class="material-symbols-outlined text-[48px]">videocam</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Chip -->
+                        <div class="absolute top-sm right-sm bg-surface/80 backdrop-blur-sm border border-outline-variant rounded-full px-2 py-0.5 flex items-center gap-1">
+                             <div class="w-1.5 h-1.5 rounded-full bg-error animate-pulse"></div>
+                             <span class="font-mono-data text-[9px] text-on-surface uppercase tracking-wider">REC</span>
+                        </div>
+                        
+                        <!-- Scrim & Details -->
+                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-surface-dim to-transparent p-sm pt-xl flex flex-col justify-end translate-y-1 group-hover:translate-y-0 transition-transform">
+                            <span class="font-mono-data text-mono-data text-on-surface truncate">NKN_004.mp4</span>
+                            <span class="font-label-caps text-[9px] text-on-surface-variant opacity-70">11:15 AM</span>
+                        </div>
+                    </div><div class="relative rounded-lg overflow-hidden border border-outline-variant group cursor-pointer h-full min-h-[160px] bg-surface-container-low">
+                        <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style="background: linear-gradient(135deg, #1e293b, #0f172a)">
+                            <!-- Minimalist icon instead of actual image for surveillance aesthetic -->
+                            <div class="w-full h-full flex items-center justify-center opacity-20">
+                                <span class="material-symbols-outlined text-[48px]">image</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Chip -->
+                        <div class="absolute top-sm right-sm bg-surface/80 backdrop-blur-sm border border-outline-variant rounded-full px-2 py-0.5 flex items-center gap-1">
+                             <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                             <span class="font-mono-data text-[9px] text-on-surface uppercase tracking-wider">RAW</span>
+                        </div>
+                        
+                        <!-- Scrim & Details -->
+                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-surface-dim to-transparent p-sm pt-xl flex flex-col justify-end translate-y-1 group-hover:translate-y-0 transition-transform">
+                            <span class="font-mono-data text-mono-data text-on-surface truncate">NKN_005.raw</span>
+                            <span class="font-label-caps text-[9px] text-on-surface-variant opacity-70">12:30 PM</span>
+                        </div>
+                    </div><div class="relative rounded-lg overflow-hidden border border-outline-variant group cursor-pointer h-full min-h-[160px] bg-surface-container-low">
+                        <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style="background: linear-gradient(135deg, #1e293b, #0f172a)">
+                            <!-- Minimalist icon instead of actual image for surveillance aesthetic -->
+                            <div class="w-full h-full flex items-center justify-center opacity-20">
+                                <span class="material-symbols-outlined text-[48px]">image</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Chip -->
+                        <div class="absolute top-sm right-sm bg-surface/80 backdrop-blur-sm border border-outline-variant rounded-full px-2 py-0.5 flex items-center gap-1">
+                             <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                             <span class="font-mono-data text-[9px] text-on-surface uppercase tracking-wider">RAW</span>
+                        </div>
+                        
+                        <!-- Scrim & Details -->
+                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-surface-dim to-transparent p-sm pt-xl flex flex-col justify-end translate-y-1 group-hover:translate-y-0 transition-transform">
+                            <span class="font-mono-data text-mono-data text-on-surface truncate">NKN_006.raw</span>
+                            <span class="font-label-caps text-[9px] text-on-surface-variant opacity-70">01:12 PM</span>
+                        </div>
+                    </div><div class="relative rounded-lg overflow-hidden border border-outline-variant group cursor-pointer h-full min-h-[160px] bg-surface-container-low">
+                        <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style="background: linear-gradient(135deg, #1e293b, #0f172a)">
+                            <!-- Minimalist icon instead of actual image for surveillance aesthetic -->
+                            <div class="w-full h-full flex items-center justify-center opacity-20">
+                                <span class="material-symbols-outlined text-[48px]">videocam</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Chip -->
+                        <div class="absolute top-sm right-sm bg-surface/80 backdrop-blur-sm border border-outline-variant rounded-full px-2 py-0.5 flex items-center gap-1">
+                             <div class="w-1.5 h-1.5 rounded-full bg-error animate-pulse"></div>
+                             <span class="font-mono-data text-[9px] text-on-surface uppercase tracking-wider">REC</span>
+                        </div>
+                        
+                        <!-- Scrim & Details -->
+                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-surface-dim to-transparent p-sm pt-xl flex flex-col justify-end translate-y-1 group-hover:translate-y-0 transition-transform">
+                            <span class="font-mono-data text-mono-data text-on-surface truncate">NKN_007.mp4</span>
+                            <span class="font-label-caps text-[9px] text-on-surface-variant opacity-70">02:44 PM</span>
+                        </div>
+                    </div><div class="relative rounded-lg overflow-hidden border border-outline-variant group cursor-pointer h-full min-h-[160px] bg-surface-container-low">
+                        <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style="background: linear-gradient(135deg, #1e293b, #0f172a)">
+                            <!-- Minimalist icon instead of actual image for surveillance aesthetic -->
+                            <div class="w-full h-full flex items-center justify-center opacity-20">
+                                <span class="material-symbols-outlined text-[48px]">image</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Chip -->
+                        <div class="absolute top-sm right-sm bg-surface/80 backdrop-blur-sm border border-outline-variant rounded-full px-2 py-0.5 flex items-center gap-1">
+                             <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                             <span class="font-mono-data text-[9px] text-on-surface uppercase tracking-wider">RAW</span>
+                        </div>
+                        
+                        <!-- Scrim & Details -->
+                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-surface-dim to-transparent p-sm pt-xl flex flex-col justify-end translate-y-1 group-hover:translate-y-0 transition-transform">
+                            <span class="font-mono-data text-mono-data text-on-surface truncate">NKN_008.raw</span>
+                            <span class="font-label-caps text-[9px] text-on-surface-variant opacity-70">03:00 PM</span>
+                        </div>
+                    </div></div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full h-[64px] rounded-t-full border-t border-outline-variant shadow-lg z-50 flex justify-around items-center px-gutter bg-surface-container-lowest/90 backdrop-blur-lg">
+<a class="flex flex-col items-center justify-center text-primary font-bold active:bg-surface-container-high touch-manipulation scale-95 duration-100 p-sm rounded-full" href="#">
+<span class="material-symbols-outlined mb-xs" style="font-variation-settings: &quot;FILL&quot; 1;">photo_library</span>
+<span class="font-label-caps text-label-caps">Gallery</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-high touch-manipulation scale-95 duration-100 p-sm rounded-full" href="#">
+<span class="material-symbols-outlined mb-xs">storage</span>
+<span class="font-label-caps text-label-caps">Backups</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-high touch-manipulation scale-95 duration-100 p-sm rounded-full" href="#">
+<span class="material-symbols-outlined mb-xs">dynamic_form</span>
+<span class="font-label-caps text-label-caps">Status</span>
+</a>
+</nav>
+<!-- OVERLAYS -->
+<!-- Safe Disconnect Overlay (Full screen blur) -->
+<div class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-surface-dim/70 hidden blur-exit" id="overlay-disconnect">
+<div class="bg-surface-container border border-outline-variant rounded-xl p-xl flex flex-col items-center max-w-sm mx-md text-center shadow-2xl scale-95 transform transition-transform duration-300" id="disconnect-modal">
+<div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-md border border-outline-variant">
+<span class="material-symbols-outlined text-[32px] text-primary">usb_off</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-sm">Safe to Disconnect</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-lg">The Nikon S2900 has been securely unmounted. You may now remove the device.</p>
+<button class="w-full py-sm rounded-DEFAULT bg-surface-container-highest border border-outline-variant text-on-surface hover:bg-surface-variant transition-colors font-label-caps text-label-caps" id="btn-close-disconnect">Dismiss</button>
+</div>
+</div>
+<!-- Two-Step Purge Sheet (Bottom up) -->
+<div class="fixed inset-0 z-[90] bg-surface-dim/50 hidden" id="overlay-purge">
+<div class="absolute bottom-0 left-0 w-full bg-surface-container-high rounded-t-xl border-t border-outline-variant p-md transform slide-up-exit pb-[80px] md:pb-md flex flex-col items-center md:max-w-md md:left-1/2 md:-translate-x-1/2 md:bottom-md md:rounded-xl md:border" id="purge-sheet">
+<div class="w-12 h-1 bg-outline-variant rounded-full mb-md md:hidden"></div>
+<div class="flex items-center gap-sm w-full mb-md">
+<span class="material-symbols-outlined text-error text-[24px]">warning</span>
+<h3 class="font-headline-sm text-headline-sm text-error flex-1">Two-Step Purge</h3>
+<button class="text-on-surface-variant p-xs hover:bg-surface-variant rounded-full" id="btn-close-purge"><span class="material-symbols-outlined text-[20px]">close</span></button>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant w-full mb-lg text-left">This will permanently delete all unbacked-up media from the connected device. This action cannot be reversed.</p>
+<div class="w-full flex gap-sm mt-auto">
+<button class="flex-1 py-sm rounded-DEFAULT border border-outline-variant text-on-surface-variant hover:bg-surface-variant transition-colors font-label-caps text-label-caps" id="btn-cancel-purge">Cancel</button>
+<button class="flex-1 py-sm rounded-DEFAULT bg-error text-on-error hover:bg-error-container transition-colors font-label-caps text-label-caps flex items-center justify-center gap-xs" id="btn-confirm-purge">
+<span class="material-symbols-outlined text-[16px]">delete_forever</span>
+                    Confirm Purge
+                </button>
+</div>
+</div>
+</div>
+<!-- JS Logic -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- Loading State Simulation ---
+            const loadingContainer = document.getElementById('loading-state');
+            const contentGrid = document.getElementById('content-grid');
+            const emptyState = document.getElementById('empty-state');
+            
+            // Generate skeletons
+            for (let i = 0; i < 8; i++) {
+                const skeleton = document.createElement('div');
+                skeleton.className = 'w-full h-full min-h-[160px] rounded-lg shimmer border border-outline-variant/30 flex flex-col justify-end p-sm';
+                skeleton.innerHTML = `
+                    <div class="h-3 w-1/3 bg-surface-container-highest rounded mb-xs"></div>
+                    <div class="h-2 w-1/4 bg-surface-container-highest rounded"></div>
+                `;
+                loadingContainer.appendChild(skeleton);
+            }
+
+            // Simulate network fetch
+            setTimeout(() => {
+                loadingContainer.classList.add('hidden');
+                
+                // Toggle this boolean to test empty state vs content state
+                const hasContent = true; 
+
+                if (hasContent) {
+                    contentGrid.classList.remove('hidden');
+                    contentGrid.classList.add('grid');
+                    populateGrid();
+                } else {
+                    emptyState.classList.remove('hidden');
+                    emptyState.classList.add('flex');
+                    document.getElementById('btn-purge').disabled = true;
+                    document.getElementById('btn-purge').classList.add('opacity-50', 'cursor-not-allowed');
+                    document.getElementById('btn-backup').disabled = true;
+                    document.getElementById('btn-backup').classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            }, 1500);
+
+            function populateGrid() {
+                const dummyData = [
+                    { name: 'NKN_001.raw', time: '10:42 AM', type: 'image' },
+                    { name: 'NKN_002.raw', time: '10:45 AM', type: 'image' },
+                    { name: 'NKN_003.raw', time: '11:01 AM', type: 'image' },
+                    { name: 'NKN_004.mp4', time: '11:15 AM', type: 'video' },
+                    { name: 'NKN_005.raw', time: '12:30 PM', type: 'image' },
+                    { name: 'NKN_006.raw', time: '01:12 PM', type: 'image' },
+                    { name: 'NKN_007.mp4', time: '02:44 PM', type: 'video' },
+                    { name: 'NKN_008.raw', time: '03:00 PM', type: 'image' },
+                ];
+
+                dummyData.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'relative rounded-lg overflow-hidden border border-outline-variant group cursor-pointer h-full min-h-[160px] bg-surface-container-low';
+                    
+                    // Simple placeholder gradient for images to keep code clean and fast
+                    const gradient = `linear-gradient(135deg, #1e293b, #0f172a)`;
+                    
+                    card.innerHTML = `
+                        <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style="background: ${gradient}">
+                            <!-- Minimalist icon instead of actual image for surveillance aesthetic -->
+                            <div class="w-full h-full flex items-center justify-center opacity-20">
+                                <span class="material-symbols-outlined text-[48px]">${item.type === 'video' ? 'videocam' : 'image'}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Chip -->
+                        <div class="absolute top-sm right-sm bg-surface/80 backdrop-blur-sm border border-outline-variant rounded-full px-2 py-0.5 flex items-center gap-1">
+                             <div class="w-1.5 h-1.5 rounded-full ${item.type === 'video' ? 'bg-error animate-pulse' : 'bg-primary'}"></div>
+                             <span class="font-mono-data text-[9px] text-on-surface uppercase tracking-wider">${item.type === 'video' ? 'REC' : 'RAW'}</span>
+                        </div>
+                        
+                        <!-- Scrim & Details -->
+                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-surface-dim to-transparent p-sm pt-xl flex flex-col justify-end translate-y-1 group-hover:translate-y-0 transition-transform">
+                            <span class="font-mono-data text-mono-data text-on-surface truncate">${item.name}</span>
+                            <span class="font-label-caps text-[9px] text-on-surface-variant opacity-70">${item.time}</span>
+                        </div>
+                    `;
+                    contentGrid.appendChild(card);
+                });
+            }
+
+            // --- Backup Button Logic ---
+            const btnBackup = document.getElementById('btn-backup');
+            const backupText = document.getElementById('backup-text');
+            const backupIcon = document.getElementById('backup-icon');
+            const backupProgress = document.getElementById('backup-progress');
+            let isBackingUp = false;
+
+            btnBackup.addEventListener('click', () => {
+                if(isBackingUp || btnBackup.disabled) return;
+                isBackingUp = true;
+                
+                // UI State change
+                btnBackup.classList.replace('bg-primary', 'bg-surface-container-high');
+                btnBackup.classList.replace('text-on-primary', 'text-primary');
+                btnBackup.classList.replace('hover:bg-primary-fixed-dim', 'hover:bg-surface-container-high');
+                backupText.innerText = "Syncing...";
+                backupIcon.innerText = "sync";
+                backupIcon.classList.add('animate-spin');
+
+                // Simulate progress
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 5;
+                    backupProgress.style.width = `${progress}%`;
+                    
+                    if(progress >= 100) {
+                        clearInterval(interval);
+                        finishBackup();
+                    }
+                }, 100);
+            });
+
+            function finishBackup() {
+                backupProgress.style.width = '0%';
+                backupIcon.classList.remove('animate-spin');
+                backupIcon.innerText = "done_all";
+                backupText.innerText = "Synced";
+                
+                setTimeout(() => {
+                    // Reset
+                    isBackingUp = false;
+                    btnBackup.classList.replace('bg-surface-container-high', 'bg-primary');
+                    btnBackup.classList.replace('text-primary', 'text-on-primary');
+                    btnBackup.classList.replace('hover:bg-surface-container-high', 'hover:bg-primary-fixed-dim');
+                    backupText.innerText = "Backup All";
+                    backupIcon.innerText = "cloud_upload";
+                }, 2000);
+            }
+
+            // --- Overlays & Modals Logic ---
+            const overlayPurge = document.getElementById('overlay-purge');
+            const purgeSheet = document.getElementById('purge-sheet');
+            const btnPurge = document.getElementById('btn-purge');
+            const btnClosePurge = document.getElementById('btn-close-purge');
+            const btnCancelPurge = document.getElementById('btn-cancel-purge');
+            const btnConfirmPurge = document.getElementById('btn-confirm-purge');
+
+            function openPurge() {
+                if(btnPurge.disabled) return;
+                overlayPurge.classList.remove('hidden');
+                // slight delay to allow display:block to apply before animating transform
+                requestAnimationFrame(() => {
+                    purgeSheet.classList.remove('slide-up-exit');
+                    purgeSheet.classList.add('slide-up-enter-active');
+                });
+            }
+
+            function closePurge() {
+                purgeSheet.classList.remove('slide-up-enter-active');
+                purgeSheet.classList.add('slide-up-exit-active');
+                setTimeout(() => {
+                    overlayPurge.classList.add('hidden');
+                    purgeSheet.classList.remove('slide-up-exit-active');
+                    purgeSheet.classList.add('slide-up-exit');
+                }, 200); // match transition duration
+            }
+
+            btnPurge.addEventListener('click', openPurge);
+            btnClosePurge.addEventListener('click', closePurge);
+            btnCancelPurge.addEventListener('click', closePurge);
+            overlayPurge.addEventListener('click', (e) => {
+                if(e.target === overlayPurge) closePurge();
+            });
+
+            btnConfirmPurge.addEventListener('click', () => {
+                closePurge();
+                contentGrid.innerHTML = '';
+                contentGrid.classList.remove('grid');
+                contentGrid.classList.add('hidden');
+                
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                
+                btnPurge.disabled = true;
+                btnPurge.classList.add('opacity-50', 'cursor-not-allowed');
+                btnBackup.disabled = true;
+                btnBackup.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+
+
+            // --- Disconnect Telemetry Logic ---
+            const telemetryBtn = document.getElementById('telemetry-btn');
+            const overlayDisconnect = document.getElementById('overlay-disconnect');
+            const modalDisconnect = document.getElementById('disconnect-modal');
+            const btnCloseDisconnect = document.getElementById('btn-close-disconnect');
+            const connectionDot = document.getElementById('connection-dot');
+            const connectionText = document.getElementById('connection-text');
+
+            function openDisconnect() {
+                overlayDisconnect.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    overlayDisconnect.classList.remove('blur-exit');
+                    overlayDisconnect.classList.add('blur-enter-active');
+                    modalDisconnect.classList.remove('scale-95');
+                    modalDisconnect.classList.add('scale-100');
+                    
+                    // Change telemetry state immediately
+                    connectionDot.classList.remove('bg-primary', 'animate-pulse');
+                    connectionDot.classList.add('bg-outline');
+                    connectionText.innerText = "No Device";
+                });
+            }
+
+            function closeDisconnect() {
+                overlayDisconnect.classList.remove('blur-enter-active');
+                overlayDisconnect.classList.add('blur-exit-active');
+                modalDisconnect.classList.remove('scale-100');
+                modalDisconnect.classList.add('scale-95');
+                
+                setTimeout(() => {
+                    overlayDisconnect.classList.add('hidden');
+                    overlayDisconnect.classList.remove('blur-exit-active');
+                    overlayDisconnect.classList.add('blur-exit');
+                }, 300);
+            }
+
+            telemetryBtn.addEventListener('click', () => {
+                // Only allow disconnect if currently connected
+                if(connectionDot.classList.contains('bg-primary')) {
+                    openDisconnect();
+                }
+            });
+            
+            btnCloseDisconnect.addEventListener('click', closeDisconnect);
+
+        });
+    </script>
+
+
+</body></html>

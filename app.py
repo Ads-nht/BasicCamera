@@ -445,6 +445,10 @@ class DeleteRequest(BaseModel):
     confirm: bool
     token: str
 
+class ZipDownloadRequest(BaseModel):
+    indices: List[int]
+
+
 # ==============================================================================
 # ENDPOINTS
 # ==============================================================================
@@ -598,6 +602,83 @@ async def stream_file(index: int):
                     logger.error(f"Streaming subprocess exited with error: {stderr_err.decode().strip()}")
 
     return StreamingResponse(chunk_generator(), media_type="application/octet-stream")
+
+def remove_file(path: str):
+    try:
+        os.remove(path)
+        logger.info(f"Cleaned up temporary zip file: {path}")
+    except Exception as e:
+        logger.error(f"Failed to remove temp zip file {path}: {e}")
+
+@app.post("/api/files/download-zip")
+async def download_selected_zip(payload: ZipDownloadRequest, background_tasks: BackgroundTasks):
+    """Gathers selected camera files, downloading them if not already cached, and zips them."""
+    global active_files_catalog
+    
+    if not payload.indices:
+        raise HTTPException(status_code=400, detail="No indices provided.")
+        
+    # 1. Ensure all requested files exist locally in BACKUP_DIR (cache them on the fly if needed!)
+    for idx in payload.indices:
+        file_info = active_files_catalog.get(idx)
+        if not file_info:
+            raise HTTPException(status_code=404, detail=f"File with index {idx} not found.")
+            
+        local_filepath = os.path.join(BACKUP_DIR, file_info["name"])
+        if not os.path.exists(local_filepath):
+            # Download from camera
+            if not await is_camera_connected():
+                raise HTTPException(status_code=503, detail="Camera disconnected mid-download.")
+                
+            async with camera_lock:
+                try:
+                    process = await asyncio.create_subprocess_exec(
+                        "gphoto2", "--get-file", str(idx), "--filename", local_filepath,
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE
+                    )
+                    _, stderr = await process.communicate()
+                    if process.returncode != 0:
+                        raise Exception(f"Failed to fetch file from camera: {stderr.decode()}")
+                    logger.info(f"Downloaded and cached file {file_info['name']} on the fly.")
+                except Exception as e:
+                    logger.error(f"Failed to cache file index {idx} on the fly: {e}")
+                    raise HTTPException(status_code=500, detail=f"Failed to fetch {file_info['name']} from camera.")
+
+    # 2. Create the ZIP archive
+    import zipfile
+    import tempfile
+    temp_zip_fd, temp_zip_path = tempfile.mkstemp(suffix=".zip", dir=CACHE_THUMB_DIR)
+    os.close(temp_zip_fd) # Close file descriptor so zipfile can open it
+    
+    try:
+        def build_zip():
+            with zipfile.ZipFile(temp_zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_f:
+                for idx in payload.indices:
+                    file_info = active_files_catalog.get(idx)
+                    local_filepath = os.path.join(BACKUP_DIR, file_info["name"])
+                    zip_f.write(local_filepath, arcname=file_info["name"])
+                    
+        await asyncio.to_thread(build_zip)
+    except Exception as e:
+        logger.error(f"Failed to generate ZIP archive: {e}")
+        try:
+            os.remove(temp_zip_path)
+        except:
+            pass
+        raise HTTPException(status_code=500, detail="Failed to construct ZIP archive.")
+        
+    # Queue removal of the temp zip file after it's served
+    background_tasks.add_task(remove_file, temp_zip_path)
+    
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    download_filename = f"camera_export_{timestamp}.zip"
+    
+    return FileResponse(
+        temp_zip_path,
+        media_type="application/zip",
+        filename=download_filename
+    )
 
 @app.post("/api/backup")
 async def trigger_backup(payload: BackupRequest, background_tasks: BackgroundTasks):

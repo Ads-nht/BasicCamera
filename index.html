@@ -161,7 +161,7 @@
         <!-- SECTION 1: GALLERY -->
         <div id="section-gallery" class="tab-section flex flex-col gap-sm">
             <!-- Actions Toolbar -->
-            <div class="flex justify-between items-center mb-lg sticky top-0 z-20 bg-background/90 backdrop-blur-md py-sm rounded-lg border border-outline-variant/30 px-sm shadow-md">
+            <div id="actions-toolbar" class="flex justify-between items-center mb-lg sticky top-0 z-20 bg-background/90 backdrop-blur-md py-sm rounded-lg border border-outline-variant/30 px-sm shadow-md">
                 <div class="flex items-center gap-sm">
                     <span class="material-symbols-outlined text-on-surface-variant">folder_open</span>
                     <span class="font-label-caps text-label-caps text-on-surface">CAMERA STORAGE</span>
@@ -176,6 +176,30 @@
                         <span id="backup-text">Backup All</span>
                         <!-- Progress overlay -->
                         <div class="absolute left-0 top-0 bottom-0 bg-inverse-primary/30 w-0 transition-all duration-75" id="backup-progress"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selection Actions Toolbar (Hidden by default) -->
+            <div id="selection-toolbar" class="hidden flex justify-between items-center mb-lg sticky top-0 z-20 bg-primary/10 border border-primary/30 backdrop-blur-md py-sm rounded-lg px-sm shadow-md transition-all duration-300">
+                <div class="flex items-center gap-md">
+                    <button class="flex items-center justify-center w-8 h-8 rounded hover:bg-surface/20 transition-colors text-primary" id="btn-cancel-selection" title="Cancel selection">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                    <span class="font-mono-data text-on-surface font-semibold" id="selection-count">0 items selected</span>
+                </div>
+                <div class="flex gap-sm">
+                    <button class="px-md py-xs rounded-DEFAULT border border-primary/30 text-primary hover:bg-primary/20 transition-colors font-label-caps text-label-caps flex items-center gap-xs" id="btn-download-selected">
+                        <span class="material-symbols-outlined text-[16px]">download_zip</span>
+                        Download (ZIP)
+                    </button>
+                    <button class="px-md py-xs rounded-DEFAULT border border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors font-label-caps text-label-caps flex items-center gap-xs" id="btn-backup-selected">
+                        <span class="material-symbols-outlined text-[16px]">cloud_upload</span>
+                        Backup Selected
+                    </button>
+                    <button class="px-md py-xs rounded-DEFAULT bg-error text-on-error hover:bg-error/95 transition-colors font-label-caps text-label-caps flex items-center gap-xs" id="btn-delete-selected">
+                        <span class="material-symbols-outlined text-[16px]">delete</span>
+                        Delete Selected
                     </button>
                 </div>
             </div>
@@ -528,12 +552,60 @@
             }
         }
 
+        let selectedFileIndices = [];
+
+        function toggleFileSelection(index, isSelected, cardElement) {
+            if (isSelected) {
+                if (!selectedFileIndices.includes(index)) {
+                    selectedFileIndices.push(index);
+                }
+                cardElement.classList.add('ring-2', 'ring-primary', 'border-primary');
+                cardElement.querySelector('.checkbox-container').classList.remove('opacity-0');
+            } else {
+                selectedFileIndices = selectedFileIndices.filter(i => i !== index);
+                cardElement.classList.remove('ring-2', 'ring-primary', 'border-primary');
+                cardElement.querySelector('.checkbox-container').classList.add('opacity-0');
+            }
+            
+            updateSelectionToolbar();
+        }
+
+        function updateSelectionToolbar() {
+            const actionsToolbar = document.getElementById('actions-toolbar');
+            const selectionToolbar = document.getElementById('selection-toolbar');
+            const selectionCount = document.getElementById('selection-count');
+            
+            if (selectedFileIndices.length > 0) {
+                actionsToolbar.classList.add('hidden');
+                selectionToolbar.classList.remove('hidden');
+                selectionCount.innerText = `${selectedFileIndices.length} items selected`;
+            } else {
+                actionsToolbar.classList.remove('hidden');
+                selectionToolbar.classList.add('hidden');
+            }
+        }
+
+        function clearSelection() {
+            selectedFileIndices = [];
+            document.querySelectorAll('.card-file').forEach(card => {
+                card.classList.remove('ring-2', 'ring-primary', 'border-primary');
+                const chkContainer = card.querySelector('.checkbox-container');
+                if (chkContainer) chkContainer.classList.add('opacity-0');
+                const chk = card.querySelector('.select-file-checkbox');
+                if (chk) chk.checked = false;
+            });
+            updateSelectionToolbar();
+        }
+
         function populateGrid(files) {
             contentGrid.innerHTML = '';
+            // Clear selection on page load/refresh
+            clearSelection();
             
             files.forEach(file => {
                 const card = document.createElement('div');
-                card.className = 'relative rounded-lg overflow-hidden border border-outline-variant group cursor-pointer h-full min-h-[160px] bg-surface-container-low';
+                card.className = 'relative rounded-lg overflow-hidden border border-outline-variant group cursor-pointer h-full min-h-[160px] bg-surface-container-low transition-all duration-200 card-file';
+                card.setAttribute('data-index', file.index);
                 
                 const isVideo = file.mime.startsWith('video');
                 const gradient = `linear-gradient(135deg, #171f33, #0b1326)`;
@@ -553,6 +625,11 @@
                         </div>
                     </div>
                     
+                    <!-- Selection Checkbox -->
+                    <div class="absolute top-sm left-sm z-10 checkbox-container opacity-0 group-hover:opacity-100 transition-opacity duration-200" onclick="event.stopPropagation();">
+                        <input type="checkbox" class="w-5 h-5 rounded border-outline-variant accent-primary select-file-checkbox cursor-pointer shadow-md" data-index="${file.index}"/>
+                    </div>
+                    
                     <!-- Status Chip -->
                     <div class="absolute top-sm right-sm bg-surface/80 backdrop-blur-sm border border-outline-variant rounded-full px-2 py-0.5 flex items-center gap-1">
                          <div class="w-1.5 h-1.5 rounded-full ${isVideo ? 'bg-error animate-pulse' : 'bg-primary'}"></div>
@@ -566,7 +643,20 @@
                     </div>
                 `;
                 
-                card.addEventListener('click', () => openPreview(file));
+                const checkbox = card.querySelector('.select-file-checkbox');
+                checkbox.addEventListener('change', (e) => {
+                    toggleFileSelection(file.index, checkbox.checked, card);
+                });
+                
+                card.addEventListener('click', (e) => {
+                    if (selectedFileIndices.length > 0) {
+                        checkbox.checked = !checkbox.checked;
+                        toggleFileSelection(file.index, checkbox.checked, card);
+                    } else {
+                        openPreview(file);
+                    }
+                });
+                
                 contentGrid.appendChild(card);
             });
         }
@@ -827,6 +917,127 @@
             btnBackup.classList.replace('bg-surface-container-high', 'bg-primary');
             btnBackup.classList.replace('text-primary', 'text-on-primary');
         }
+
+        // --- Selection Toolbar Actions ---
+        document.getElementById('btn-cancel-selection').addEventListener('click', clearSelection);
+
+        document.getElementById('btn-download-selected').addEventListener('click', async () => {
+            if (selectedFileIndices.length === 0) return;
+            
+            const btn = document.getElementById('btn-download-selected');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-[16px]">sync</span> Generating ZIP...`;
+            
+            try {
+                const response = await fetch('/api/files/download-zip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ indices: selectedFileIndices })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to generate ZIP archive.');
+                }
+                
+                const blob = await response.blob();
+                const disposition = response.headers.get('Content-Disposition');
+                let filename = 'camera_export.zip';
+                if (disposition && disposition.indexOf('attachment') !== -1) {
+                    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                    const matches = filenameRegex.exec(disposition);
+                    if (matches != null && matches[1]) { 
+                        filename = matches[1].replace(/['"]/g, '');
+                    }
+                }
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                
+                clearSelection();
+            } catch (err) {
+                alert('ZIP export failed: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        });
+
+        document.getElementById('btn-backup-selected').addEventListener('click', async () => {
+            if (selectedFileIndices.length === 0) return;
+            
+            const btn = document.getElementById('btn-backup-selected');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-[16px]">sync</span> Triggering...`;
+            
+            try {
+                const response = await fetch('/api/backup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ indices: selectedFileIndices })
+                });
+                
+                if (response.ok) {
+                    switchTab('backups');
+                    clearSelection();
+                    pollBackupProgress();
+                } else {
+                    const data = await response.json();
+                    alert('Backup failed to start: ' + data.message);
+                }
+            } catch (err) {
+                alert('Backup error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        });
+
+        document.getElementById('btn-delete-selected').addEventListener('click', async () => {
+            if (selectedFileIndices.length === 0) return;
+            
+            if (!confirm(`Are you sure you want to permanently delete the selected ${selectedFileIndices.length} files from the camera?`)) {
+                return;
+            }
+            
+            const btn = document.getElementById('btn-delete-selected');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-[16px]">sync</span> Deleting...`;
+            
+            try {
+                const response = await fetch('/api/files/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        indices: selectedFileIndices,
+                        confirm: true,
+                        token: 'CONFIRM_DELETE_COOLPIX'
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('Selected files deleted successfully.');
+                    clearSelection();
+                    loadFiles();
+                } else {
+                    const data = await response.json();
+                    alert('Delete failed: ' + data.detail);
+                }
+            } catch (err) {
+                alert('Delete error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        });
 
         // --- Purge Action (Card Format Safe Deletes) ---
         btnPurge.addEventListener('click', () => {

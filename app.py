@@ -101,6 +101,26 @@ class CameraSession:
             await asyncio.sleep(1.0)
             return await asyncio.to_thread(fetch)
 
+    def _download_file_local(self, folder: str, name: str, target_path: str):
+        import gphoto2 as gp
+        if not self.camera:
+            logger.info("Initializing persistent camera session for file download...")
+            self._init_local()
+        camera_file = self.camera.file_get(folder, name, gp.GP_FILE_TYPE_NORMAL)
+        camera_file.save(target_path)
+
+    async def download_file(self, folder: str, name: str, target_path: str):
+        """Downloads a file from the camera and saves it directly to local disk."""
+        try:
+            await asyncio.to_thread(self._download_file_local, folder, name, target_path)
+        except Exception as e:
+            logger.warning(f"Session download failed: {e}. Resetting session and retrying...")
+            await asyncio.to_thread(self._close_local)
+            # Recover USB connection and retry
+            reset_camera_usb()
+            await asyncio.sleep(1.0)
+            await asyncio.to_thread(self._download_file_local, folder, name, target_path)
+
 camera_session = CameraSession()
 
 async def fetch_preview_bytes(folder: str, name: str) -> bytes:
@@ -409,17 +429,7 @@ async def backup_worker(indices: List[int], target_dir: str):
                 if not await is_camera_connected():
                     raise CameraConnectionError("Camera disconnected.")
                     
-                # Download single file directly to persistent host disk
-                process = await asyncio.create_subprocess_exec(
-                    "gphoto2", "--get-file", str(idx), "--filename", local_filepath,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-                _, stderr = await process.communicate()
-                
-                if process.returncode != 0:
-                    raise Exception(stderr.decode().strip())
-                    
+                await camera_session.download_file(file_info["folder"], filename, local_filepath)
                 backup_status["completed_files"] += 1
                 logger.info(f"Successfully backed up {filename} to {local_filepath}")
             except Exception as e:
@@ -632,14 +642,7 @@ async def download_selected_zip(payload: ZipDownloadRequest, background_tasks: B
                 
             async with camera_lock:
                 try:
-                    process = await asyncio.create_subprocess_exec(
-                        "gphoto2", "--get-file", str(idx), "--filename", local_filepath,
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE
-                    )
-                    _, stderr = await process.communicate()
-                    if process.returncode != 0:
-                        raise Exception(f"Failed to fetch file from camera: {stderr.decode()}")
+                    await camera_session.download_file(file_info["folder"], file_info["name"], local_filepath)
                     logger.info(f"Downloaded and cached file {file_info['name']} on the fly.")
                 except Exception as e:
                     logger.error(f"Failed to cache file index {idx} on the fly: {e}")

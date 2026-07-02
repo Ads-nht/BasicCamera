@@ -569,49 +569,33 @@ async def get_file_preview(index: int):
 
 @app.get("/api/files/{index}/stream")
 async def stream_file(index: int):
-    """Streams a media asset from local disk backup if available, otherwise directly from camera."""
+    """Streams a media asset from local disk backup if available, otherwise downloads and serves."""
     global active_files_catalog
     
     file_info = active_files_catalog.get(index)
-    if file_info:
-        name = file_info["name"]
-        local_filepath = os.path.join(BACKUP_DIR, name)
-        if os.path.exists(local_filepath):
-            logger.info(f"Serving stream for {name} directly from local disk cache.")
-            return FileResponse(local_filepath, media_type="application/octet-stream", filename=name)
-            
-    if not await is_camera_connected():
-        raise CameraConnectionError("Camera is disconnected.")
+    if not file_info:
+        raise HTTPException(status_code=404, detail="File not found.")
         
-    async def chunk_generator():
-        # Keep lock active throughout the stream session
-        async with camera_lock:
-            process = await asyncio.create_subprocess_exec(
-                "gphoto2", "--get-file", str(index), "--stdout",
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
+    name = file_info["name"]
+    folder = file_info["folder"]
+    local_filepath = os.path.join(BACKUP_DIR, name)
+    
+    if os.path.exists(local_filepath):
+        logger.info(f"Serving stream for {name} directly from local disk cache.")
+        return FileResponse(local_filepath, media_type="application/octet-stream", filename=name)
+        
+    if not await is_camera_connected():
+        raise HTTPException(status_code=503, detail="Camera disconnected.")
+        
+    async with camera_lock:
+        try:
+            await camera_session.download_file(folder, name, local_filepath)
+            logger.info(f"Downloaded and cached file {name} on the fly for streaming.")
+        except Exception as e:
+            logger.error(f"Failed to download file {name} from camera: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to download {name} from camera.")
             
-            try:
-                # 64KB streaming blocks
-                while True:
-                    chunk = await process.stdout.read(65536)
-                    if not chunk:
-                        break
-                    yield chunk
-            except Exception as e:
-                logger.error(f"Streaming error on file index {index}: {e}")
-                try:
-                    process.kill()
-                except:
-                    pass
-            finally:
-                await process.wait()
-                if process.returncode != 0:
-                    stderr_err = await process.stderr.read()
-                    logger.error(f"Streaming subprocess exited with error: {stderr_err.decode().strip()}")
-
-    return StreamingResponse(chunk_generator(), media_type="application/octet-stream")
+    return FileResponse(local_filepath, media_type="application/octet-stream", filename=name)
 
 def remove_file(path: str):
     try:

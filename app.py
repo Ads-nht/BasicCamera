@@ -105,19 +105,11 @@ class CameraConnectionError(Exception):
 def parse_gphoto_file_list(stdout: str) -> List[Dict[str, Any]]:
     """
     Parses the output of 'gphoto2 --list-files'.
-    
-    Sample output format:
-    There is no file in folder '/'.
-    There is 1 file in folder '/store_00010001/DCIM'.
-    There are 2 files in folder '/store_00010001/DCIM/100NIKON'.
-    #1      DSCN0001.JPG               120 KB image/jpeg
-    #2      DSCN0002.MOV              5120 KB video/quicktime
+    Handles varying column configurations (like resolution column in photos and UNIX timestamps at the end of lines).
     """
     files = []
     current_folder = "/"
     folder_pattern = re.compile(r"in folder '([^']+)'")
-    # Matches: #<index> <filename> <size> <mimetype>
-    file_pattern = re.compile(r"^#(\d+)\s+(\S+)\s+(.+?)\s+([a-zA-Z0-9\-/]+)$")
     
     for line in stdout.splitlines():
         line = line.strip()
@@ -129,22 +121,40 @@ def parse_gphoto_file_list(stdout: str) -> List[Dict[str, Any]]:
             current_folder = folder_match.group(1)
             continue
             
-        file_match = file_pattern.match(line)
-        if file_match:
-            index = int(file_match.group(1))
-            name = file_match.group(2)
-            size_str = file_match.group(3)
-            mime = file_match.group(4)
-            
-            files.append({
-                "index": index,
-                "name": name,
-                "folder": current_folder,
-                "path": f"{current_folder}/{name}" if current_folder != "/" else f"/{name}",
-                "size": size_str,
-                "mime": mime
-            })
-            
+        if line.startswith("#"):
+            parts = line.split()
+            if len(parts) >= 5: # Minimal columns: #index, filename, status, size_val, size_unit
+                index_str = parts[0].lstrip("#")
+                if not index_str.isdigit():
+                    continue
+                index = int(index_str)
+                name = parts[1]
+                
+                # Retrieve mimetype by scanning columns containing '/'
+                mime = None
+                for p in parts:
+                    if "/" in p:
+                        mime = p
+                        break
+                if not mime:
+                    # Fallback if mimetype lacks a slash
+                    if parts[-1].isdigit() and len(parts) > 5:
+                        mime = parts[-2]
+                    else:
+                        mime = parts[-1]
+                
+                # Size is parts[3] (value) + " " + parts[4] (unit, e.g. "KB")
+                size = f"{parts[3]} {parts[4]}"
+                
+                files.append({
+                    "index": index,
+                    "name": name,
+                    "folder": current_folder,
+                    "path": f"{current_folder}/{name}" if current_folder != "/" else f"/{name}",
+                    "size": size,
+                    "mime": mime
+                })
+                
     return files
 
 # ==============================================================================
@@ -323,9 +333,6 @@ async def list_files(background_tasks: BackgroundTasks):
 @app.get("/api/files/{index}/stream")
 async def stream_file(index: int):
     """Streams a media asset directly from the camera without caching to server RAM."""
-    if camera_lock.locked():
-        return JSONResponse(status_code=409, content={"status": "busy", "message": "Camera is currently busy."})
-        
     if not await is_camera_connected():
         raise CameraConnectionError("Camera is disconnected.")
         
@@ -365,9 +372,6 @@ async def trigger_backup(payload: BackupRequest, background_tasks: BackgroundTas
     if backup_status["active"]:
         return JSONResponse(status_code=400, content={"status": "error", "message": "Backup job already running."})
         
-    if camera_lock.locked():
-        return JSONResponse(status_code=409, content={"status": "busy", "message": "Camera is currently busy."})
-        
     # Gather target indices
     if payload.all:
         stdout = await execute_gphoto_safe(["--list-files"])
@@ -406,8 +410,8 @@ async def delete_files(payload: DeleteRequest):
             detail="Verification failed. Invalid token or confirmation missing."
         )
         
-    if camera_lock.locked() or backup_status["active"]:
-        return JSONResponse(status_code=409, content={"status": "busy", "message": "Camera is currently busy."})
+    if backup_status["active"]:
+        return JSONResponse(status_code=409, content={"status": "busy", "message": "Backup is active. Cannot delete files."})
         
     # POKA-YOKE DETAIL:
     # We sort indices in descending order!

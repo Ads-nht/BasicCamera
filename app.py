@@ -49,6 +49,49 @@ backup_status: Dict[str, Any] = {
     "errors": []
 }
 
+# Global in-memory camera catalog cache
+active_files_catalog: Dict[int, Dict[str, Any]] = {}
+CACHE_THUMB_DIR = "/storage/backup/.cache/thumbnails"
+os.makedirs(CACHE_THUMB_DIR, exist_ok=True)
+pre_cache_active = False
+
+async def pre_cache_thumbnails(files: List[dict]):
+    global pre_cache_active
+    if pre_cache_active:
+        return
+    pre_cache_active = True
+    logger.info("Starting background thumbnail pre-caching...")
+    try:
+        for f in files:
+            if not await is_camera_connected():
+                break
+                
+            cache_filename = f"{f['name']}_{f['size'].replace(' ', '_')}.jpg"
+            cache_path = os.path.join(CACHE_THUMB_DIR, cache_filename)
+            
+            if os.path.exists(cache_path):
+                continue
+                
+            async with camera_lock:
+                try:
+                    process = await asyncio.create_subprocess_exec(
+                        "gphoto2", "--get-thumbnail", str(f["index"]), "--stdout",
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE
+                    )
+                    stdout, stderr = await process.communicate()
+                    if process.returncode == 0 and len(stdout) > 0:
+                        with open(cache_path, "wb") as thumb_f:
+                            thumb_f.write(stdout)
+                        logger.info(f"Cached thumbnail for {f['name']}")
+                except Exception as ex:
+                    logger.error(f"Failed to cache thumbnail for {f['name']}: {ex}")
+            # Yield lock window to prioritize other API requests
+            await asyncio.sleep(0.05)
+    finally:
+        pre_cache_active = False
+        logger.info("Background thumbnail pre-caching complete.")
+
 # ==============================================================================
 # CUSTOM EXCEPTIONS
 # ==============================================================================
@@ -251,13 +294,26 @@ async def get_status():
     }
 
 @app.get("/api/files")
-async def list_files():
+async def list_files(background_tasks: BackgroundTasks):
     """Lists all files on the digital camera."""
+    global active_files_catalog
     if camera_lock.locked():
+        # Fallback: Serve the in-memory catalog cache so UI requests never hang while camera is busy
+        if active_files_catalog:
+            return {
+                "status": "success",
+                "count": len(active_files_catalog),
+                "files": list(active_files_catalog.values())
+            }
         return JSONResponse(status_code=409, content={"status": "busy", "message": "Camera is currently busy."})
         
     stdout = await execute_gphoto_safe(["--list-files"])
     files = parse_gphoto_file_list(stdout)
+    active_files_catalog = {f["index"]: f for f in files}
+    
+    # Start pre-caching thumbnails in the background
+    background_tasks.add_task(pre_cache_thumbnails, files)
+    
     return {
         "status": "success",
         "count": len(files),
@@ -399,21 +455,47 @@ def get_readable_size(size_in_bytes: int) -> str:
 
 @app.get("/api/files/{index}/thumbnail")
 async def get_thumbnail(index: int):
-    """Fetches a preview thumbnail directly from camera or returns a fallback SVG."""
-    if not await is_camera_connected():
-        return StreamingResponse(io.BytesIO(SVG_IMAGE), media_type="image/svg+xml")
-        
-    async with camera_lock:
-        process = await asyncio.create_subprocess_exec(
-            "gphoto2", "--get-thumbnail", str(index), "--stdout",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-        if process.returncode == 0 and len(stdout) > 0:
-            return StreamingResponse(io.BytesIO(stdout), media_type="image/jpeg")
+    """Fetches a preview thumbnail directly from cache or camera, returning fallback SVG on error."""
+    global active_files_catalog
+    
+    # Resolve file name/size from cache catalog
+    file_info = active_files_catalog.get(index)
+    if not file_info:
+        # Fallback to populating the catalog cache
+        try:
+            stdout = await execute_gphoto_safe(["--list-files"])
+            files = parse_gphoto_file_list(stdout)
+            active_files_catalog = {f["index"]: f for f in files}
+            file_info = active_files_catalog.get(index)
+        except Exception:
+            pass
             
-    # If thumbnail retrieval fails (e.g. for video files or connection glitch), return clean SVG
+    if file_info:
+        # 1. Cache-first check
+        cache_filename = f"{file_info['name']}_{file_info['size'].replace(' ', '_')}.jpg"
+        cache_path = os.path.join(CACHE_THUMB_DIR, cache_filename)
+        
+        if os.path.exists(cache_path):
+            return FileResponse(cache_path, media_type="image/jpeg")
+            
+        # 2. Cache miss: Fetch from camera and store to cache
+        if await is_camera_connected():
+            async with camera_lock:
+                try:
+                    process = await asyncio.create_subprocess_exec(
+                        "gphoto2", "--get-thumbnail", str(index), "--stdout",
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE
+                    )
+                    stdout, stderr = await process.communicate()
+                    if process.returncode == 0 and len(stdout) > 0:
+                        with open(cache_path, "wb") as thumb_f:
+                            thumb_f.write(stdout)
+                        return StreamingResponse(io.BytesIO(stdout), media_type="image/jpeg")
+                except Exception as ex:
+                    logger.error(f"Failed to fetch thumbnail for index {index}: {ex}")
+                    
+    # Return fallback SVG
     return StreamingResponse(io.BytesIO(SVG_IMAGE), media_type="image/svg+xml")
 
 @app.get("/api/backups")

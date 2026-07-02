@@ -63,6 +63,51 @@ active_files_catalog: Dict[int, Dict[str, Any]] = {}
 os.makedirs(CACHE_THUMB_DIR, exist_ok=True)
 pre_cache_active = False
 
+def fetch_preview_bytes_local(folder: str, name: str) -> bytes:
+    import gphoto2 as gp
+    camera = gp.Camera()
+    camera.init()
+    try:
+        camera_file = gp.CameraFile()
+        camera.file_get(folder, name, gp.GP_FILE_TYPE_PREVIEW, camera_file)
+        return bytes(camera_file.get_data_and_size())
+    finally:
+        try:
+            camera.exit()
+        except:
+            pass
+
+async def fetch_preview_bytes(folder: str, name: str) -> bytes:
+    """Fetches the preview/thumbnail bytes of a camera file."""
+    remote_host = os.getenv("REMOTE_CAMERA_HOST")
+    if remote_host:
+        # Run python code remotely over SSH
+        preview_script = f"""
+import gphoto2 as gp, sys
+camera = gp.Camera()
+camera.init()
+try:
+    camera_file = gp.CameraFile()
+    camera.file_get("{folder}", "{name}", gp.GP_FILE_TYPE_PREVIEW, camera_file)
+    sys.stdout.buffer.write(camera_file.get_data_and_size())
+finally:
+    camera.exit()
+"""
+        process = await asyncio.create_subprocess_exec(
+            "ssh", f"ads@{remote_host}", "docker", "exec", "camera-app", "python3", "-c", preview_script,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        if process.returncode != 0:
+            raise Exception(f"Remote preview fetch failed: {stderr.decode()}")
+        return stdout
+    else:
+        # Run locally in a worker thread
+        return await asyncio.to_thread(fetch_preview_bytes_local, folder, name)
+
+pre_cache_active = False
+
 async def pre_cache_thumbnails(files: List[dict]):
     global pre_cache_active
     if pre_cache_active:
@@ -82,15 +127,10 @@ async def pre_cache_thumbnails(files: List[dict]):
                 
             async with camera_lock:
                 try:
-                    process = await asyncio.create_subprocess_exec(
-                        "gphoto2", "--get-thumbnail", str(f["index"]), "--stdout",
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE
-                    )
-                    stdout, stderr = await process.communicate()
-                    if process.returncode == 0 and len(stdout) > 0:
+                    data = await fetch_preview_bytes(f["folder"], f["name"])
+                    if len(data) > 0:
                         with open(cache_path, "wb") as thumb_f:
-                            thumb_f.write(stdout)
+                            thumb_f.write(data)
                         logger.info(f"Cached thumbnail for {f['name']}")
                 except Exception as ex:
                     logger.error(f"Failed to cache thumbnail for {f['name']}: {ex}")
@@ -653,16 +693,11 @@ async def get_thumbnail(index: int):
         if await is_camera_connected():
             async with camera_lock:
                 try:
-                    process = await asyncio.create_subprocess_exec(
-                        "gphoto2", "--get-thumbnail", str(index), "--stdout",
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE
-                    )
-                    stdout, stderr = await process.communicate()
-                    if process.returncode == 0 and len(stdout) > 0:
+                    data = await fetch_preview_bytes(file_info["folder"], file_info["name"])
+                    if len(data) > 0:
                         with open(cache_path, "wb") as thumb_f:
-                            thumb_f.write(stdout)
-                        return StreamingResponse(io.BytesIO(stdout), media_type="image/jpeg")
+                            thumb_f.write(data)
+                        return Response(content=data, media_type="image/jpeg")
                 except Exception as ex:
                     logger.error(f"Failed to fetch thumbnail for index {index}: {ex}")
                     

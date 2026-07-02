@@ -36,7 +36,14 @@ async def get_index():
 # ==============================================================================
 # CONFIGURATION & GLOBAL STATE
 # ==============================================================================
-BACKUP_DIR = "/storage/backup"
+# Determine storage root dynamically (inside docker volume vs local host development)
+if os.path.exists("/storage") and os.access("/storage", os.W_OK):
+    BACKUP_DIR = "/storage/backup"
+    CACHE_THUMB_DIR = "/storage/backup/.cache/thumbnails"
+else:
+    BACKUP_DIR = os.path.abspath("./storage")
+    CACHE_THUMB_DIR = os.path.abspath("./storage/.cache/thumbnails")
+
 SECURE_DELETE_TOKEN = os.getenv("SECURE_DELETE_TOKEN", "CONFIRM_DELETE_COOLPIX")
 
 # Serialization lock: Prevents concurrent operations from flooding the camera PTP buffer
@@ -53,7 +60,6 @@ backup_status: Dict[str, Any] = {
 
 # Global in-memory camera catalog cache
 active_files_catalog: Dict[int, Dict[str, Any]] = {}
-CACHE_THUMB_DIR = "/storage/backup/.cache/thumbnails"
 os.makedirs(CACHE_THUMB_DIR, exist_ok=True)
 pre_cache_active = False
 
@@ -164,10 +170,44 @@ def parse_gphoto_file_list(stdout: str) -> List[Dict[str, Any]]:
 # ==============================================================================
 def reset_camera_usb() -> bool:
     """
-    Scans host sysfs inside container to find Nikon camera Vendor/Product ID
+    Scans host sysfs (locally or remotely over SSH) to find the Nikon camera
     and performs a low-level USB bus reset via ioctl.
     """
-    logger.info("Attempting low-level USB bus reset for Nikon camera...")
+    remote_host = os.getenv("REMOTE_CAMERA_HOST")
+    if remote_host:
+        logger.info(f"Attempting remote low-level USB bus reset on host {remote_host}...")
+        reset_code = """
+import glob, os, fcntl
+for dev_path in glob.glob('/sys/bus/usb/devices/*'):
+    id_vendor_path = os.path.join(dev_path, 'idVendor')
+    id_product_path = os.path.join(dev_path, 'idProduct')
+    if os.path.exists(id_vendor_path) and os.path.exists(id_product_path):
+        try:
+            with open(id_vendor_path, 'r') as f: vendor = f.read().strip()
+            with open(id_product_path, 'r') as f: product = f.read().strip()
+            if vendor == '04b0' and product == '035e':
+                with open(os.path.join(dev_path, 'busnum'), 'r') as f: bus = f.read().strip().zfill(3)
+                with open(os.path.join(dev_path, 'devnum'), 'r') as f: dev = f.read().strip().zfill(3)
+                usb_device_path = f'/dev/bus/usb/{bus}/{dev}'
+                if os.path.exists(usb_device_path):
+                    with open(usb_device_path, 'wb') as usb_f:
+                        fcntl.ioctl(usb_f.fileno(), 21780, 0)
+                    print('RESET_SUCCESS')
+        except Exception as e:
+            print(f'RESET_FAIL: {e}')
+"""
+        import subprocess
+        try:
+            cmd = ["ssh", f"ads@{remote_host}", "docker", "exec", "-T", "camera-app", "python3", "-c", reset_code]
+            out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode()
+            if "RESET_SUCCESS" in out:
+                logger.info("Successfully triggered remote camera USB reset over SSH.")
+                return True
+        except Exception as e:
+            logger.error(f"Failed to trigger remote USB reset over SSH: {e}")
+        return False
+
+    logger.info("Attempting local low-level USB bus reset for Nikon camera...")
     found = False
     for dev_path in glob.glob("/sys/bus/usb/devices/*"):
         id_vendor_path = os.path.join(dev_path, "idVendor")
@@ -198,11 +238,19 @@ def reset_camera_usb() -> bool:
     return found
 
 async def execute_gphoto_raw(args: List[str]) -> tuple[str, str, int]:
-    """Runs a raw gphoto2 command asynchronously, with auto-USB-reset on connection fail."""
+    """Runs a raw gphoto2 command asynchronously (locally or remotely via SSH), with auto-reset retry."""
+    remote_host = os.getenv("REMOTE_CAMERA_HOST")
+    if remote_host:
+        cmd = "ssh"
+        cmd_args = [f"ads@{remote_host}", "docker", "exec", "-T", "camera-app", "gphoto2"] + args
+    else:
+        cmd = "gphoto2"
+        cmd_args = args
+
     async def run_once():
         try:
             process = await asyncio.create_subprocess_exec(
-                "gphoto2", *args,
+                cmd, *cmd_args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )

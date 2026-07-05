@@ -78,8 +78,10 @@ Plug in the Nikon Coolpix S2900 via USB. udev starts the container automatically
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SECURE_DELETE_TOKEN` | `CONFIRM_DELETE_COOLPIX` | Required token for delete operations |
-| `REMOTE_CAMERA_HOST` | — | Optional: fetch files over SSH from a remote host |
+| `SECURE_DELETE_TOKEN` | *(required for delete)* | Secret token for delete operations — set in env, never commit |
+| `REMOTE_CAMERA_HOST` | — | Optional: remote host for SSH camera access |
+| `REMOTE_CAMERA_SSH_USER` | — | SSH user when using remote mode (e.g. `camera`) |
+| `REMOTE_CAMERA_PYTHON` | `python3` | Python interpreter path on remote host |
 
 ---
 

@@ -14,7 +14,7 @@ Bu döküman, Basic Camera projesinin mimari kararlarını, mevcut çalışma du
 ## 🛠️ Teknik Altyapı ve Kararlar
 * **Subprocess vs Python-gphoto2:** Python-gphoto2 kütüphanesi C tabanlıdır ve USB kopmalarında Python yorumlayıcısını doğrudan segmentasyon hatasıyla (segfault) çökertmektedir. Bu durum sunucu kararlılığını bozduğu için, hata yakalama kabiliyeti yüksek olan asenkron `gphoto2` CLI subprocess çağrıları tercih edilmiştir.
 * **StreamingResponse:** Büyük boyutlu video ve fotoğrafların RAM tüketimini sıfırlamak için gphoto stdout çıktısı 64KB'lık parçalar (chunks) halinde FastAPI `StreamingResponse` ile istemciye aktarılır.
-* **Geri Alma ve Silme Güvenliği:** Yanlışlıkla tüm galeriyi silmeyi engellemek amacıyla `/api/files/delete` endpoint'i `confirm=True` ve `CONFIRM_DELETE_COOLPIX` token'ı ile çift aşamalı kontrole bağlanmıştır.
+* **Geri Alma ve Silme Güvenliği:** Yanlışlıkla tüm galeriyi silmeyi engellemek amacıyla `/api/files/delete` endpoint'i `confirm=True` ve `SECURE_DELETE_TOKEN` ortam değişkeni ile çift aşamalı kontrole bağlanmıştır. Token kaynak kodda veya dokümantasyonda paylaşılmaz.
 
 ## 🎯 Sonraki Adımlar (Next Steps)
 1. Udev kuralının host üzerinde aktif edilerek çalışırlığının doğrulanması.

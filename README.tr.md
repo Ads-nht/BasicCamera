@@ -78,8 +78,10 @@ Nikon Coolpix S2900'ü USB ile takın. udev konteyneri otomatik başlatır. [htt
 
 | Değişken | Varsayılan | Açıklama |
 |----------|------------|----------|
-| `SECURE_DELETE_TOKEN` | `CONFIRM_DELETE_COOLPIX` | Silme işlemleri için zorunlu token |
-| `REMOTE_CAMERA_HOST` | — | Opsiyonel: uzak host'tan SSH ile dosya çekme |
+| `SECURE_DELETE_TOKEN` | *(silme için zorunlu)* | Silme işlemleri için gizli token — env'de ayarlanır, commit edilmez |
+| `REMOTE_CAMERA_HOST` | — | Opsiyonel: SSH ile uzak kamera erişimi |
+| `REMOTE_CAMERA_SSH_USER` | — | Uzak modda SSH kullanıcısı (ör. `camera`) |
+| `REMOTE_CAMERA_PYTHON` | `python3` | Uzak host'taki Python yolu |
 
 ---
 

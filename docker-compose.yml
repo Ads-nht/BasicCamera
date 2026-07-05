@@ -11,4 +11,6 @@ services:
     devices:
       # Map the host USB bus directory to the container so libgphoto2 can scan and interact with the PTP bus
       - /dev/bus/usb:/dev/bus/usb
+    environment:
+      - SECURE_DELETE_TOKEN=${SECURE_DELETE_TOKEN}
     restart: "no" # Control lifecycle strictly via udev rules (hotplug start/stop)

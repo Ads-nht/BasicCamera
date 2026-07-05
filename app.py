@@ -44,7 +44,19 @@ else:
     BACKUP_DIR = os.path.abspath("./storage")
     CACHE_THUMB_DIR = os.path.abspath("./storage/.cache/thumbnails")
 
-SECURE_DELETE_TOKEN = os.getenv("SECURE_DELETE_TOKEN", "CONFIRM_DELETE_COOLPIX")
+SECURE_DELETE_TOKEN = os.getenv("SECURE_DELETE_TOKEN", "")
+REMOTE_CAMERA_SSH_USER = os.getenv("REMOTE_CAMERA_SSH_USER", "")
+REMOTE_CAMERA_PYTHON = os.getenv("REMOTE_CAMERA_PYTHON", "python3")
+
+
+def _remote_ssh_target() -> Optional[str]:
+    """Builds user@host SSH target from env; None when remote mode is disabled."""
+    host = os.getenv("REMOTE_CAMERA_HOST")
+    if not host:
+        return None
+    if REMOTE_CAMERA_SSH_USER:
+        return f"{REMOTE_CAMERA_SSH_USER}@{host}"
+    return host
 
 # Serialization lock: Prevents concurrent operations from flooding the camera PTP buffer
 camera_lock = asyncio.Lock()
@@ -111,12 +123,12 @@ class CameraSession:
 
     async def download_file(self, folder: str, name: str, target_path: str):
         """Downloads a file from the camera and saves it directly to local disk."""
-        remote_host = os.getenv("REMOTE_CAMERA_HOST")
-        if remote_host:
+        remote_target = _remote_ssh_target()
+        if remote_target:
             # Download file from remote workstation over SSH natively (piped to stdout)
             try:
                 process = await asyncio.create_subprocess_exec(
-                    "ssh", f"ads@{remote_host}", "gphoto2", "--folder", folder, "--get-file", name, "--stdout",
+                    "ssh", remote_target, "gphoto2", "--folder", folder, "--get-file", name, "--stdout",
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE
                 )
@@ -150,9 +162,9 @@ camera_session = CameraSession()
 
 async def fetch_preview_bytes(folder: str, name: str) -> bytes:
     """Fetches the preview/thumbnail bytes of a camera file."""
-    remote_host = os.getenv("REMOTE_CAMERA_HOST")
-    if remote_host:
-        # Run python code remotely over SSH on the workstation host machine's virtualenv natively
+    remote_target = _remote_ssh_target()
+    if remote_target:
+        # Run python code remotely over SSH on the configured host
         preview_script = f"""
 import gphoto2 as gp, sys
 camera = gp.Camera()
@@ -165,7 +177,7 @@ finally:
     camera.exit()
 """
         process = await asyncio.create_subprocess_exec(
-            "ssh", f"ads@{remote_host}", "/home/ads/Antigravity/Projeler/Basic\\ Camera/venv/bin/python3", "-c", f"'{preview_script}'",
+            "ssh", remote_target, REMOTE_CAMERA_PYTHON, "-c", preview_script,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
@@ -284,9 +296,9 @@ def reset_camera_usb() -> bool:
     Scans host sysfs (locally or remotely over SSH) to find the Nikon camera
     and performs a low-level USB bus reset via ioctl.
     """
-    remote_host = os.getenv("REMOTE_CAMERA_HOST")
-    if remote_host:
-        logger.info(f"Attempting remote low-level USB bus reset on host {remote_host}...")
+    remote_target = _remote_ssh_target()
+    if remote_target:
+        logger.info("Attempting remote low-level USB bus reset...")
         reset_code = """
 import glob, os, fcntl
 for dev_path in glob.glob('/sys/bus/usb/devices/*'):
@@ -309,7 +321,7 @@ for dev_path in glob.glob('/sys/bus/usb/devices/*'):
 """
         import subprocess
         try:
-            cmd = ["ssh", f"ads@{remote_host}", "docker", "exec", "camera-app", "python3", "-c", reset_code]
+            cmd = ["ssh", remote_target, "docker", "exec", "camera-app", "python3", "-c", reset_code]
             out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode()
             if "RESET_SUCCESS" in out:
                 logger.info("Successfully triggered remote camera USB reset over SSH.")
@@ -350,10 +362,10 @@ for dev_path in glob.glob('/sys/bus/usb/devices/*'):
 
 async def execute_gphoto_raw(args: List[str]) -> tuple[str, str, int]:
     """Runs a raw gphoto2 command asynchronously (locally or remotely via SSH), with auto-reset retry."""
-    remote_host = os.getenv("REMOTE_CAMERA_HOST")
-    if remote_host:
+    remote_target = _remote_ssh_target()
+    if remote_target:
         cmd = "ssh"
-        cmd_args = [f"ads@{remote_host}", "gphoto2"] + args
+        cmd_args = [remote_target, "gphoto2"] + args
     else:
         cmd = "gphoto2"
         cmd_args = args
@@ -730,6 +742,11 @@ async def delete_files(payload: DeleteRequest):
     Safely deletes specified files from camera.
     Includes token verification and descends indices to avoid PTP shift anomalies.
     """
+    if not SECURE_DELETE_TOKEN:
+        raise HTTPException(
+            status_code=503,
+            detail="Delete disabled: set SECURE_DELETE_TOKEN environment variable."
+        )
     if not payload.confirm or payload.token != SECURE_DELETE_TOKEN:
         raise HTTPException(
             status_code=403,

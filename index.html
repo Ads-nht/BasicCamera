@@ -515,6 +515,10 @@
     </div>
 
     <script>
+        function promptDeleteToken() {
+            return prompt('Enter delete confirmation token (SECURE_DELETE_TOKEN):');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const loadingContainer = document.getElementById('loading-state');
             const contentGrid = document.getElementById('content-grid');
@@ -1143,6 +1147,9 @@
                     return;
                 }
 
+                const deleteToken = promptDeleteToken();
+                if (!deleteToken) return;
+
                 const btn = document.getElementById('btn-delete-selected');
                 const originalHTML = btn.innerHTML;
                 btn.disabled = true;
@@ -1155,7 +1162,7 @@
                         body: JSON.stringify({
                             indices: selectedFileIndices,
                             confirm: true,
-                            token: 'CONFIRM_DELETE_COOLPIX'
+                            token: deleteToken
                         })
                     });
 
@@ -1196,6 +1203,13 @@
 
                 const indices = filesData.map(f => f.index);
 
+                const deleteToken = promptDeleteToken();
+                if (!deleteToken) {
+                    btnPurge.disabled = false;
+                    btnBackup.disabled = false;
+                    return;
+                }
+
                 try {
                     const res = await fetch('/api/files/delete', {
                         method: 'POST',
@@ -1203,7 +1217,7 @@
                         body: JSON.stringify({
                             indices: indices,
                             confirm: true,
-                            token: 'CONFIRM_DELETE_COOLPIX'
+                            token: deleteToken
                         })
                     });
 
